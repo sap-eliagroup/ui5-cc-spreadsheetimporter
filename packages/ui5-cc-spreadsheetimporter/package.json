@@ -38,7 +38,7 @@
     "hooks:pre-push": "npm-run-all --sequential lint:commit",
     "build": "ui5 build --config=ui5-build.yaml --all --clean-dest --dest dist",
     "build:cf": "ui5 build --config=ui5-deploy-cf.yaml --all --clean-dest --dest dist",
-    "build:mta": "rimraf resources mta_archives && mbt build --mtar archive",
+    "build:mta": "mbt build --mtar archive",
     "build:dev": "ui5 build --config=ui5-build-dev.yaml --all --dest dist  --exclude-task=replaceCopyright replaceVersion generateFlexChangesBundle generateComponentPreload generateVersionInfo minify escapeNonAsciiCharacters",
     "build:dev:tooling": "ui5 build --config=ui5-build.yaml --all --dest dist  --exclude-task=replaceCopyright replaceVersion generateFlexChangesBundle generateComponentPreload generateVersionInfo minify escapeNonAsciiCharacters",
     "replaceString": "node ./dev/replace-string.js",

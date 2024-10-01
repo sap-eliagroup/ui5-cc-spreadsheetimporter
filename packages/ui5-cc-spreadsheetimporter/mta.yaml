@@ -74,7 +74,7 @@ resources:
           existing_destinations_policy: update
       version: 1.0.0
     service: destination
-    service-name: dest-srv
+    service-name: ehs-dest-srv
     service-plan: lite
 - name: spreadsheetimporter_v1_4_1-uaa
   type: org.cloudfoundry.managed-service
