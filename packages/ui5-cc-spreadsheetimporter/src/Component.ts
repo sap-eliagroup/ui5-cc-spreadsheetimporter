@@ -192,7 +192,7 @@ export default class Component extends UIComponent {
 		const componentContainerData = this.getComponentContainerData?.() || {};
 		const buttonText = componentContainerData.buttonText ?? "Excel Import";
 		const buttonIcon = componentContainerData.buttonIcon;
-		return new Button({ text: buttonText, press: () => this.openSpreadsheetUploadDialog(), icon: buttonIcon });
+		return new Button({id: "ButtonExcelImport", text: buttonText, press: () => this.openSpreadsheetUploadDialog(), icon: buttonIcon });
 	}
 
 	//=============================================================================
