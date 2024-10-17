@@ -191,7 +191,8 @@ export default class Component extends UIComponent {
 		this.spreadsheetUpload = new SpreadsheetUpload(this, this.getModel("i18n") as ResourceModel);
 		const componentContainerData = this.getComponentContainerData?.() || {};
 		const buttonText = componentContainerData.buttonText ?? "Excel Import";
-		return new Button({ text: buttonText, press: () => this.openSpreadsheetUploadDialog() });
+		const buttonIcon = componentContainerData.buttonIcon;
+		return new Button({ text: buttonText, press: () => this.openSpreadsheetUploadDialog(), icon: buttonIcon });
 	}
 
 	//=============================================================================
