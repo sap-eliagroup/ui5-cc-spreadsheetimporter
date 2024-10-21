@@ -47,10 +47,9 @@ export default class Preview extends ManagedObject {
 	createDynamicTable(data: any[], typeLabelList: ListObject, previewColumns: string[]) {
 		const table = new Table();
 
-		// Create table columns and cells based on the first object's keys
+		// get all column names from the data to show all columns with data in the pr
 		if (typeof data !== "undefined" && data !== null && data.length > 0) {
-			const firstObject = data[0];
-			const aColumns = Object.keys(firstObject);
+			const aColumns = Preview.getAllKeys(data);
 
 			aColumns.forEach((column) => {
 				// check if column is in previewColumns
@@ -70,7 +69,7 @@ export default class Preview extends ManagedObject {
 			const template = new ColumnListItem();
 			aColumns.forEach((column) => {
 				let oCell;
-				if (typeof firstObject[column] === "object" && firstObject[column] instanceof Date) {
+				if (typeof data[0][column] === "object" && data[0][column] instanceof Date) {
 					// show date in the format dd.mm.yyyy
 					oCell = new Text({ text: `{path: '${column}', type: 'sap.ui.model.type.Date'}` });
 				} else {
@@ -90,5 +89,17 @@ export default class Preview extends ManagedObject {
 			Util.showError(new Error(this.util.geti18nText("spreadsheetimporter.noDataPreview")), "Preview.ts", "createDynamicTable");
 			return undefined;
 		}
+	}
+
+	static getAllKeys(data: any[]): string[] {
+		const allKeys = new Set<string>();
+
+		data.forEach((obj) => {
+			if (obj && typeof obj === "object") {
+				Object.keys(obj).forEach((key) => allKeys.add(key));
+			}
+		});
+
+		return Array.from(allKeys);
 	}
 }
