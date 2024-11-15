@@ -23,6 +23,8 @@ import JSONModel from "sap/ui/model/json/JSONModel";
 import Dialog from "sap/m/Dialog";
 import Select from "sap/m/Select";
 import Item from "sap/ui/core/Item";
+import Control from "sap/ui/core/Control";
+import VBox from "sap/m/VBox";
 
 type InputType = {
 	[key: string]: {
@@ -65,7 +67,10 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 				showOptions: this.component.getShowOptions(),
 				hideGenerateTemplateButton: false,
 				fileUploadValue: "",
-				densityClass: this.component._densityClass
+				densityClass: this.component._densityClass,
+				//@ts-ignore
+				uploadInfoMessage: this.component.getComponentContainerData().uploadInfoMessage
+
 			});
 			this.spreadsheetUploadDialog = (await Fragment.load({
 				name: "cc.spreadsheetimporter.XXXnamespaceXXX.fragment.SpreadsheetUpload",
@@ -341,7 +346,7 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 
 	resetContent() {
 		(this.spreadsheetUploadDialog.getModel("info") as JSONModel).setProperty("/dataRows", 0);
-		var fileUploader = (this.spreadsheetUploadDialog.getContent()[0] as FlexBox).getItems()[1] as FileUploader;
+		var fileUploader = (this.spreadsheetUploadDialog.getContent().find(x => x.getId() === "vboxUploader") as VBox).getItems().find((control: Control) => control.getMetadata().getName() === 'sap.ui.unified.FileUploader') as FileUploader;
 		fileUploader.setValue();
 	}
 
