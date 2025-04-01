@@ -11,6 +11,10 @@ import JSONModel from "sap/ui/model/json/JSONModel";
 import Fragment from "sap/ui/core/Fragment";
 import Dialog from "sap/m/Dialog";
 import Util from "../Util";
+import ODataListBindingV2 from "sap/ui/model/odata/v2/ODataListBinding";
+import ODataListBindingV4 from "sap/ui/model/odata/v4/ODataListBinding";
+import MessageHandler from "../MessageHandler";
+import MessageBox from "sap/m/MessageBox";
 
 /**
  * @namespace cc.spreadsheetimporter.XXXnamespaceXXX
@@ -21,11 +25,16 @@ export default abstract class OData extends ManagedObject {
 	private _tables: any[] = [];
 	busyDialog: Dialog;
 	spreadsheetUploadController: SpreadsheetUpload;
-
-	constructor(spreadsheetUploadController: SpreadsheetUpload) {
+	public createPromises: Promise<any>[] = [];
+	public createContexts: any[] = [];
+	messageHandler: MessageHandler;
+	util: Util;
+	constructor(spreadsheetUploadController: SpreadsheetUpload, messageHandler: MessageHandler, util: Util) {
 		super();
 		this.odataMessageHandler = new ODataMessageHandler(spreadsheetUploadController);
 		this.spreadsheetUploadController = spreadsheetUploadController;
+		this.messageHandler = messageHandler;
+		this.util = util;
 	}
 
 	/**
@@ -48,7 +57,7 @@ export default abstract class OData extends ManagedObject {
 
 			await this.createBusyDialog(spreadsheetUploadController);
 
-			// Slice the array into chunks of 'batchSize' if necessary
+			// Slice the array into chunks of 'batchSize' if necessary, if UPDATE max batch size is 100
 			const slicedPayloadArray = this.processPayloadArray(component.getBatchSize(), payloadArray);
 			(this.busyDialog.getModel("busyModel") as JSONModel).setProperty("/progressText", `0/${payloadArray.length}`);
 			let currentProgressPercent = 0;
@@ -58,6 +67,16 @@ export default abstract class OData extends ManagedObject {
 			for (const batch of slicedPayloadArray) {
 				// loop over data from spreadsheet file
 				try {
+					// default for draft scenarios we need to request the object first to get draft status otherwise the update will fail
+					// with options the strategy could be changed to make the update quicker
+					// request all objects in the batch first
+					if (component.getAction() === "UPDATE") {
+						await this.getObjects(model, binding, batch);
+						// TODO: decide to continue or break depending on component.getContinueOnError()
+						// TODO: if getContinueOnError is true, continue with successfull fetched objects
+					}
+
+					// maybe move this loop to createAsync and updateAsync --> parameter will change (breaking change)
 					for (let payload of batch) {
 						let fireEventAsyncReturn: FireEventReturnType;
 						// skip draft and directly create
@@ -73,7 +92,12 @@ export default abstract class OData extends ManagedObject {
 						if (fireEventAsyncReturn.returnValue) {
 							payload = fireEventAsyncReturn.returnValue;
 						}
-						this.createAsync(model, binding, payload);
+						if (component.getAction() === "CREATE") {
+							this.createAsync(model, binding, payload);
+						}
+						if (component.getAction() === "UPDATE") {
+							this.updateAsync(model, binding, payload);
+						}
 					}
 					// wait for all drafts to be created
 					await this.submitChanges(model);
@@ -112,7 +136,7 @@ export default abstract class OData extends ManagedObject {
 				}
 			}
 			if (tableObject) {
-				spreadsheetUploadController.refreshBinding(context, binding, tableObject.getId());
+				spreadsheetUploadController.refreshBinding(context, binding, tableObject);
 			}
 			this.busyDialog.close();
 			fnResolve();
@@ -120,6 +144,7 @@ export default abstract class OData extends ManagedObject {
 			this.busyDialog.close();
 			this.resetContexts();
 			Log.error("Error while calling the odata service", error as Error, "SpreadsheetUpload: callOdata");
+			await this.showInternalErrorDialog(error);
 			await this.checkForODataErrors(component.getShowBackendErrorMessages());
 			fnReject(error);
 		}
@@ -132,10 +157,11 @@ export default abstract class OData extends ManagedObject {
 		if (tableObject.getMetadata().getName() === "sap.ui.table.Table") {
 			return tableObject.getBinding("rows");
 		}
+		throw new Error(`Unsupported table type: ${tableObject.getMetadata().getName()}. Only sap.m.Table, sap.m.List, and sap.ui.table.Table are supported. Alternatively you can specify custom binding in option 'binding'`);
 	}
 
 	public _getActionName(context: any, sOperation: string) {
-		var model = context.getModel(),
+		const model = (context?.getModel && context.getModel()) || context.getView().getModel(),
 			metaModel = model.getMetaModel(),
 			entitySetPath = metaModel.getMetaPath(context.getPath());
 		return metaModel.getObject("".concat(entitySetPath, "@com.sap.vocabularies.Common.v1.DraftRoot/").concat(sOperation));
@@ -143,6 +169,11 @@ export default abstract class OData extends ManagedObject {
 
 	// Slice the array into chunks of 'batchSize' if necessary
 	public processPayloadArray(batchSize: number, payloadArray: string | any[]) {
+		// For UPDATE actions, enforce max batch size of 100
+		if (this.spreadsheetUploadController.component.getAction() === "UPDATE") {
+			batchSize = Math.min(batchSize > 0 ? batchSize : 100, 100);
+		}
+
 		if (batchSize > 0) {
 			let slicedPayloadArray = [];
 			const numOfSlices = Math.ceil(payloadArray.length / batchSize);
@@ -176,7 +207,7 @@ export default abstract class OData extends ManagedObject {
 				}
 				return selectedTable;
 			} else if (this.tables.length === 0) {
-				throw new Error("Found more than one table on Object Page.\n Please specify table in option 'tableId'");
+				throw new Error("No table found on Object Page.\n Please specify table in option 'tableId'");
 			} else {
 				return this.tables[0];
 			}
@@ -215,12 +246,16 @@ export default abstract class OData extends ManagedObject {
 			} catch (error) {
 				Log.debug("sap/ui/core/Messaging not found", undefined, "SpreadsheetUpload: checkForODataErrors");
 			}
-			// fallback for UI5 versions below 1.118
+			// ui5lint-disable-next-line -- fallback for UI5 versions below 1.118
 			const messages = sap.ui.getCore().getMessageManager().getMessageModel().getData();
 			if (messages.length > 0) {
 				this.odataMessageHandler.displayMessages(messages);
 			}
 		}
+	}
+
+	private async showInternalErrorDialog(error: any) {
+		MessageBox.error(error.message);
 	}
 	
 	getView(context: any): any {
@@ -236,6 +271,7 @@ export default abstract class OData extends ManagedObject {
 
 	abstract create(model: any, binding: any, payload: any): any;
 	abstract createAsync(model: any, binding: any, payload: any): any;
+	abstract updateAsync(model: any, binding: any, payload: any): any;
 	abstract submitChanges(model: any): Promise<any>;
 	abstract waitForCreation(): Promise<any>;
 	abstract waitForDraft(): void;
@@ -246,6 +282,10 @@ export default abstract class OData extends ManagedObject {
 	abstract getOdataType(binding: any, odataType: any): string;
 	abstract checkForErrors(model: any, binding: any, showBackendErrorMessages: Boolean): Promise<boolean>;
 	abstract createCustomBinding(binding: any): any;
-
+	abstract getODataEntitiesRecursive(entityName: string, deepLevel: number): any;
+	abstract getBindingFromBinding(binding: any, expand?: any): ODataListBindingV4 | ODataListBindingV2;
+	abstract fetchBatch(customBinding: ODataListBindingV4 | ODataListBindingV2, batchSize: number): Promise<any>;
+	abstract addKeys(labelList: ListObject, entityName: string, parentEntity?: any, partner?: string): void;
+	abstract getObjects(model: any, binding: any, batch: any): Promise<any>;
 	// Pro Methods
 }
