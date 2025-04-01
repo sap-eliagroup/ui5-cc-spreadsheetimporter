@@ -1,0 +1,114 @@
+name: wdi5 tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-wdi5:
+    runs-on: ubuntu-latest
+    if: "github.event.pull_request.title != 'chore: release main'"
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ["ordersv2fe", "ordersv4fe", "ordersv2fenondraft", "ordersv2freestylenondraftopenui5", "ordersv2freestylenondraft"]
+        ui5version: [120, 108, 96, 84, 71] # 120 as soon as wdi5 issue is fixed
+        exclude:
+          - scenario: ordersv4fe
+            ui5version: 71
+          # - scenario: ordersv4fets
+          #   ui5version: 71
+          # - scenario: ordersv4fets
+          #   ui5version: 84
+          # - scenario: ordersv4fets
+          #   ui5version: 96
+
+    steps:
+      # - name: update chrome
+      #   run: |
+      #     wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+      #     sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+      #     sudo apt-get update
+      #     sudo apt-get --only-upgrade install google-chrome-stable
+      #     # check chrome version
+      #     google-chrome --version
+
+      - name: install gnome-keyring
+        run: sudo apt install gnome-keyring
+
+      - name: checkout spreadsheetupload Repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - run: corepack enable pnpm
+      - name: use node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      # log pnpm version
+      - name: log pnpm version
+        run: pnpm --version
+
+      - name: get port
+        run: |
+          TESTAPPPORT=$(node ./dev/get-port.js ${{ matrix.scenario }} ${{ matrix.ui5version }})
+          echo "TESTAPPPORT=$TESTAPPPORT" >> $GITHUB_ENV
+
+      - name: Remove cds-plugin-ui5 
+        run: |
+          cd examples/packages/server
+          node -e "const fs = require('fs'); \
+                    const pkg = require('./package.json'); \
+                    delete pkg.devDependencies['cds-plugin-ui5']; \
+                    delete pkg.cds['cds-plugin-ui5']; \
+                    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+
+      - name: pnpm install
+        run: |
+          npm pkg delete scripts.prepare
+          pnpm install --no-frozen-lockfile
+
+      - name: copy test apps
+        run: pnpm copyTestApps
+
+      - name: Run Build
+        run: pnpm build
+
+      - name: install @sap/cds-dk
+        run: |
+          npm i -g @sap/cds-dk
+
+      # run app      # wait for cap server to install ui5 component, remove when switch to fiori tools
+      - name: start cap server
+        run: |
+          pnpm start:server&
+
+      - name: start app ${{ matrix.scenario }} ui5 ${{ matrix.ui5version }}
+        if: matrix.scenario != 'ordersv4fecds'
+        run: |
+          pnpm --filter ${{ matrix.scenario }}${{ matrix.ui5version }} start:silent&
+
+      # run wdi5 tests
+      - name: test wdi5 ${{ matrix.scenario }} ui5 ${{ matrix.ui5version }}
+        if: matrix.scenario != 'ordersv4fecds'
+        run: |
+          while ! nc -z localhost 4004; do sleep 0.1; done
+          while ! nc -z localhost ${{ env.TESTAPPPORT }}; do sleep 0.1; done
+          pnpm --filter ui5-cc-spreadsheetimporter-sample test -- -- --headless ${{ matrix.scenario }} ${{ matrix.ui5version }}
+
+      # special case for ordersv4fecds
+      - name: wait for ${{ matrix.scenario }} ui5 ${{ matrix.ui5version }}
+        if: matrix.scenario == 'ordersv4fecds'
+        run: |
+          while ! nc -z localhost 4004; do sleep 0.1; done
+          while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:4004/ui.v4.ordersv4fecds/index.html)" != "200" ]]; do sleep 5; done
+
+      # special case for ordersv4fecds
+      - name: test wdi5 ${{ matrix.scenario }} ui5 ${{ matrix.ui5version }}
+        if: matrix.scenario == 'ordersv4fecds'
+        run: |
+          pnpm --filter ui5-cc-spreadsheetimporter-sample test -- -- --headless ${{ matrix.scenario }} ${{ matrix.ui5version }}

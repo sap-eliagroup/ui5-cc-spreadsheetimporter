@@ -1,7 +1,7 @@
 import ManagedObject from "sap/ui/base/ManagedObject";
 import Component from "../Component";
 import XMLView from "sap/ui/core/mvc/XMLView";
-import { Messages, ListObject, ComponentData, DeepDownloadConfig } from "../types";
+import { Messages, ListObject, ComponentData } from "../types";
 import ResourceModel from "sap/ui/model/resource/ResourceModel";
 import ResourceBundle from "sap/base/i18n/ResourceBundle";
 import OData from "./odata/OData";
@@ -13,7 +13,7 @@ import Log from "sap/base/Log";
 import OptionsDialog from "./dialog/OptionsDialog";
 import SpreadsheetDialog from "../control/SpreadsheetDialog";
 import SpreadsheetUploadDialog from "./dialog/SpreadsheetUploadDialog";
-import { Action, CustomMessageTypes } from "../enums";
+import { CustomMessageTypes } from "../enums";
 import VersionInfo from "sap/ui/VersionInfo";
 /**
  * @namespace cc.spreadsheetimporter.XXXnamespaceXXX
@@ -23,6 +23,7 @@ export default class SpreadsheetUpload extends ManagedObject {
 	public component: Component;
 	public context: any;
 	private _isODataV4: boolean;
+	private isOpenUI5: boolean;
 	private _view: XMLView;
 	private _tableObject: any;
 	private messageHandler: MessageHandler;
@@ -70,15 +71,9 @@ export default class SpreadsheetUpload extends ManagedObject {
 		this.util = new Util(componentI18n.getResourceBundle() as ResourceBundle);
 		this.messageHandler = new MessageHandler(this);
 		this.spreadsheetUploadDialogHandler = new SpreadsheetUploadDialog(this, component, componentI18n, this.messageHandler);
-	}
-
-	/**
-	 * Executes initial setup.
-	 * @returns {Promise<void>} A promise that resolves when the initial setup is complete.
-	 */
-	async initialSetup(): Promise<void> {
 		// check if "sap.ui.generic" is available, if false it is OpenUI5
-		this.isOpenUI5 = await this.isOpenUI5Context();
+		// @ts-ignore
+		this.isOpenUI5 = sap.ui.generic ? true : false;
 		// load version from UI5 2.0
 		VersionInfo.load()
 			.catch(function (err) {
@@ -91,6 +86,13 @@ export default class SpreadsheetUpload extends ManagedObject {
 					Log.debug("constructor", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ ui5version: version, isOpenUI5: this.isOpenUI5 }));
 				}.bind(this)
 			);
+	}
+
+	/**
+	 * Executes initial setup.
+	 * @returns {Promise<void>} A promise that resolves when the initial setup is complete.
+	 */
+	async initialSetup(): Promise<void> {
 		await this.spreadsheetUploadDialogHandler.createSpreadsheetUploadDialog();
 		if (!this.component.getStandalone()) {
 			try {
@@ -119,9 +121,6 @@ export default class SpreadsheetUpload extends ManagedObject {
 		} else {
 			this.tableObject = await OData.prototype.getTableObject(this.component.getTableId(), this.view, this);
 			Log.debug("tableObject", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ tableObject: this.tableObject }));
-			if(!this.tableObject) {
-				throw new Error("No table object found");
-			}
 			this.component.setTableId(this.tableObject.getId());
 			Log.debug("table Id", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ tableID: this.tableObject.getId() }));
 			this.binding = OData.prototype.getBindingFromTable(this.tableObject);
@@ -130,8 +129,7 @@ export default class SpreadsheetUpload extends ManagedObject {
 			throw new Error(this.util.geti18nText("spreadsheetimporter.bindingError"));
 		}
 		this.isODataV4 = this._checkIfODataIsV4(this.binding);
-		this.odataHandler = this.createODataHandler(this, this.messageHandler, this.util);
-		this.spreadsheetUploadDialogHandler.setODataHandler(this.odataHandler);
+		this.odataHandler = this.createODataHandler(this);
 		this.controller = this.view.getController();
 		Log.debug("View", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ view: this.view }));
 		this.view.addDependent(this.spreadsheetUploadDialogHandler.getDialog());
@@ -140,17 +138,7 @@ export default class SpreadsheetUpload extends ManagedObject {
 		this.odataKeyList = await this.odataHandler.getKeyList(this._odataType, this.binding);
 		Log.debug("odataKeyList", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ odataKeyList: this.odataKeyList }));
 		this.typeLabelList = await this.odataHandler.getLabelList(this.component.getColumns(), this._odataType, this.component.getExcludeColumns(), this.binding);
-		if(this.component.getAction() === Action.Update || this.component.getAction() === Action.Delete){
-			// keys are needed for the update/delete action in the labellist
-			this.odataHandler.addKeys(this.typeLabelList, this._odataType);
-		}
 		Log.debug("typeLabelList", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ typeLabelList: this.typeLabelList }));
-
-		if(this.isODataV4) {
-			const { mainEntity, expands } = this.odataHandler.getODataEntitiesRecursive(this.getOdataType(), 99);
-			Log.debug("mainEntity", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ mainEntity: mainEntity }));
-			Log.debug("expands", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ expands: expands }));
-		}
 
 		this.model = this.binding.getModel();
 		Log.debug("model", undefined, "SpreadsheetUpload: SpreadsheetUpload", () => this.component.logger.returnObject({ model: this.model }));
@@ -171,46 +159,35 @@ export default class SpreadsheetUpload extends ManagedObject {
 	 * @param {number} version - UI5 version number.
 	 * @returns {OData} OData handler instance.
 	 */
-	createODataHandler(spreadsheetUploadController: SpreadsheetUpload, messageHandler: MessageHandler, util: Util): OData {
+	createODataHandler(spreadsheetUploadController: SpreadsheetUpload): OData {
 		if (this.isODataV4) {
-			return new ODataV4(spreadsheetUploadController, messageHandler, util);
+			return new ODataV4(spreadsheetUploadController);
 		} else {
-			return new ODataV2(spreadsheetUploadController, messageHandler, util);
-		}
-	}
-
-	/**
-	 * Initializes the component with options and performs initial setup
-	 * @param {ComponentData} options - Configuration options
-	 * @returns {Promise<void>}
-	 */
-	async initializeComponent(): Promise<void> {
-		this.initialSetupPromise = this.initialSetup();
-		await this.initialSetupPromise;
-		
-		if (this.errorState) {
-			Util.showError(this.errorMessage, "SpreadsheetUpload.ts", "initialSetup");
-			Log.error("Error during initialization", undefined, "SpreadsheetUpload: SpreadsheetUpload");
-			throw this.errorMessage;
+			return new ODataV2(spreadsheetUploadController);
 		}
 	}
 
 	/**
 	 * Opens the Spreadsheet upload dialog.
-	 * @param {ComponentData} options - Optional configuration options
+	 * @param {object} options - all component options.
 	 */
-	async openSpreadsheetUploadDialog(options?: ComponentData) {
-		try {
-			if (options) {
-				this.setComponentOptions(options);
-			}
-			await this.initializeComponent();
+	async openSpreadsheetUploadDialog(options: ComponentData) {
+		if (options) {
+			// set options to component
+			this.setComponentOptions(options);
+			this.initialSetupPromise = this.initialSetup();
+		} else {
+			this.initialSetupPromise = this.initialSetup();
+		}
+		await this.initialSetupPromise;
+		if (!this.errorState) {
+			// ((this.spreadsheetUploadDialogHandler.getDialog().getContent()[0] as FlexBox).getItems()[1] as FileUploader).clear();
 			this.spreadsheetUploadDialogHandler.openSpreadsheetUploadDialog();
-		} catch (error) {
+		} else {
+			Util.showError(this.errorMessage, "SpreadsheetUpload.ts", "initialSetup");
 			Log.error("Error opening the dialog", undefined, "SpreadsheetUpload: SpreadsheetUpload");
 		}
 	}
-
 	setComponentOptions(options: ComponentData) {
 		if (options.hasOwnProperty("spreadsheetFileName")) {
 			this.component.setSpreadsheetFileName(options.spreadsheetFileName);
@@ -311,18 +288,6 @@ export default class SpreadsheetUpload extends ManagedObject {
 		if (options.hasOwnProperty("bindingCustom")) {
 			this.component.setBindingCustom(options.bindingCustom);
 		}
-		if (options.hasOwnProperty("showDownloadButton")) {
-			this.component.setShowDownloadButton(options.showDownloadButton);
-		}
-		if (options.hasOwnProperty("action")) {
-			this.component.setAction(options.action);
-		}
-		if (options.hasOwnProperty("updateConfig")) {
-			this.component.setUpdateConfig(options.updateConfig);
-		}
-		if (options.hasOwnProperty("deepDownloadConfig")) {
-			this.component.setDeepDownloadConfig(Util.mergeDeepDownloadConfig(this.component.getDeepDownloadConfig() as DeepDownloadConfig, options.deepDownloadConfig));
-		}
 
 		// Special case for showOptions
 		if (options.availableOptions && options.availableOptions.length > 0) {
@@ -344,45 +309,41 @@ export default class SpreadsheetUpload extends ManagedObject {
 		}
 	}
 
-	refreshBinding(context: any, binding: any, tableObject: any) {
-		const id = tableObject.getId();
-		let refreshFailed = true; // Track if all refresh attempts failed
-
+	refreshBinding(context: any, binding: any, id: any) {
 		if (context._controller?.getExtensionAPI()) {
 			// refresh binding in V4 FE context
 			try {
 				context._controller.getExtensionAPI().refresh(binding.getPath());
-				refreshFailed = false;
 			} catch (error) {
 				Log.error("Failed to refresh binding in V4 FE context: " + error);
 			}
 		} else if (context.extensionAPI) {
+			let refreshFailed = false;
 			// refresh binding in V2 FE context
 			if (context.extensionAPI.refresh) {
 				try {
 					context.extensionAPI.refresh(binding.getPath(id));
-					refreshFailed = false;
 				} catch (error) {
 					Log.error("Failed to refresh binding in Object Page V2 FE context: " + error);
+					refreshFailed = true;
 				}
 			}
 			if (context.extensionAPI.refreshTable) {
 				try {
 					context.extensionAPI.refreshTable(id);
-					refreshFailed = false;
 				} catch (error) {
 					Log.error("Failed to refresh binding in List Report V2 FE context: " + error);
+					refreshFailed = true;
 				}
 			}
-		}
-
-		// Try direct binding refresh as last resort if all other attempts failed
-		if (refreshFailed) {
-			try {
-				// force refresh parameter only for v2
-				binding.refresh(this._checkIfODataIsV4(binding) ? undefined : true);
-			} catch (error) {
-				Log.error("Failed to refresh binding in other contexts: " + error);
+			// try refresh binding when refresh failed
+			if (refreshFailed) {
+				try {
+					// force refresh only available for v2
+					binding.refresh(true);
+				} catch (error) {
+					Log.error("Failed to refresh binding in other contexts: " + error);
+				}
 			}
 		}
 	}
@@ -411,10 +372,6 @@ export default class SpreadsheetUpload extends ManagedObject {
 		this.payload = [];
 		this.odataHandler.resetContexts();
 		this.spreadsheetUploadDialogHandler.resetContent();
-	}
-
-	triggerDownloadSpreadsheet() {
-		this.spreadsheetUploadDialogHandler.onInitDownloadSpreadsheetProcess();
 	}
 
 	/**
@@ -485,16 +442,5 @@ export default class SpreadsheetUpload extends ManagedObject {
 	}
 	public getOdataType(): string {
 		return this._odataType;
-	}
-
-	private async isOpenUI5Context(): Promise<boolean> {
-		try {
-			// sap.ui.core.Messaging is only available in UI5 version 1.118 and above, prefer this over sap.ui.getCore().getMessageManager() = Util.loadUI5RessourceAsync("sap/ui/core/Messaging");
-			await Util.loadUI5RessourceAsync("sap/ui/generic");
-			return true;
-		} catch (error) {
-			Log.debug("sap/ui/generic not found", undefined, "SpreadsheetUpload: isOpenUI5");
-			return false;
-		}
 	}
 }

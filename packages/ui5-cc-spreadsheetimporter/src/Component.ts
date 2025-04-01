@@ -2,7 +2,7 @@ import UIComponent from "sap/ui/core/UIComponent";
 import JSONModel from "sap/ui/model/json/JSONModel";
 import Device from "sap/ui/Device";
 import SpreadsheetUpload from "./controller/SpreadsheetUpload";
-import { ComponentData, DeepDownloadConfig, Messages, UpdateConfig } from "./types";
+import { ComponentData, Messages } from "./types";
 import Log from "sap/base/Log";
 import ResourceModel from "sap/ui/model/resource/ResourceModel";
 import Logger from "./controller/Logger";
@@ -10,8 +10,6 @@ import ComponentContainer from "sap/ui/core/ComponentContainer";
 import Button from "sap/m/Button";
 import Controller from "sap/ui/core/mvc/Controller";
 import View from "sap/ui/core/mvc/View";
-import Util from "./controller/Util";
-import { DefaultConfigs } from "./enums";
 /**
  * @namespace cc.spreadsheetimporter.XXXnamespaceXXX
  */
@@ -25,22 +23,15 @@ export default class Component extends UIComponent {
 	constructor(idOrSettings?: string | $ComponentSettings);
 	constructor(id?: string, settings?: $ComponentSettings);
 	constructor(id?: string, settings?: $ComponentSettings) {
-		if (id?.deepDownloadConfig) {
-			id.deepDownloadConfig = Util.mergeDeepDownloadConfig(DefaultConfigs.DeepDownload, id.deepDownloadConfig);
-		}
-		if (id?.updateConfig) {
-			id.updateConfig = Util.mergeUpdateConfig(DefaultConfigs.Update, id.updateConfig);
-		}
 		this.settingsFromContainer = id;
 		super(id, settings);
 	}
 
 	public static metadata = {
-		// interfaces: ["sap.ui.core.IAsyncContentCreation"]
+		// interfaces: ["sap.ui.core.IAsyncContentCreation"],
 		manifest: "json",
 		properties: {
 			spreadsheetFileName: { type: "string", defaultValue: "Template.xlsx" },
-			action: { type: "string", defaultValue: "CREATE" },
 			context: { type: "object" },
 			// @ts-ignore
 			columns: { type: "string[]", defaultValue: [] },
@@ -78,10 +69,7 @@ export default class Component extends UIComponent {
 			i18nModel: { type: "object" },
 			debug: { type: "boolean", defaultValue: false },
 			componentContainerData: { type: "object" },
-			bindingCustom: { type: "object" },
-			showDownloadButton: { type: "boolean", defaultValue: false },
-			deepDownloadConfig: { type: "object", defaultValue: {} },
-			updateConfig: { type: "object", defaultValue: {} }
+			bindingCustom: { type: "object" }
 			//Pro Configurations
 		},
 		aggregations: {
@@ -121,17 +109,6 @@ export default class Component extends UIComponent {
 					rawData: { type: "object" },
 					parsedData: { type: "object" }
 				}
-			},
-			beforeDownloadFileProcessing: {
-				parameters: {
-					data: { type: "object" }
-				}
-			},
-			beforeDownloadFileExport: {
-				parameters: {
-					workbook: { type: "object" },
-					filename: { type: "string" }
-				}
 			}
 		}
 	};
@@ -145,16 +122,8 @@ export default class Component extends UIComponent {
 		const componentData = this.getComponentData() as ComponentData;
 		const compData =
 			componentData != null ? (Object.keys(componentData).length === 0 ? (this.settingsFromContainer as ComponentData) : componentData) : (this.settingsFromContainer as ComponentData);
-		
-		// Validate configuration - if critical issues are found, log them but continue with default settings
-		const validConfig = Util.validateConfiguration(compData);
-		if (!validConfig) {
-			Log.warning("Continuing with default configuration due to validation issues", undefined, "SpreadsheetUpload: Component");
-		}
-		
 		this.getContentDensityClass();
 		this.setSpreadsheetFileName(compData?.spreadsheetFileName);
-		this.setAction(compData?.action);
 		this.setContext(compData?.context);
 		this.setColumns(compData?.columns);
 		this.setExcludeColumns(compData?.excludeColumns);
@@ -188,17 +157,14 @@ export default class Component extends UIComponent {
 		this.setCreateActiveEntity(compData?.createActiveEntity);
 		this.setI18nModel(compData?.i18nModel);
 		this.setBindingCustom(compData?.bindingCustom);
-		this.setShowDownloadButton(compData?.showDownloadButton);
 		if (compData?.availableOptions && compData?.availableOptions.length > 0) {
 			// if availableOptions is set show the Options Menu
 			this.setShowOptions(true);
 		}
 
-		const mergedDeepDownloadConfig = Util.mergeDeepDownloadConfig(DefaultConfigs.DeepDownload, compData.deepDownloadConfig)
-		this.setDeepDownloadConfig(mergedDeepDownloadConfig);
+		// Pro Configurations - Start
 
-		const mergedUpdateConfig = Util.mergeUpdateConfig(DefaultConfigs.Update, compData.updateConfig)
-		this.setUpdateConfig(mergedUpdateConfig);
+		// Pro Configurations - End
 
 		// // we could create a device model and use it
 		model = new JSONModel(Device);
@@ -225,26 +191,8 @@ export default class Component extends UIComponent {
 		this.spreadsheetUpload = new SpreadsheetUpload(this, this.getModel("i18n") as ResourceModel);
 		const componentContainerData = this.getComponentContainerData?.() || {};
 		const buttonText = componentContainerData.buttonText ?? "Excel Import";
-		const triggerDownload = componentContainerData.downloadButton ?? false;
-		
-		// Create base button configuration
-		const buttonConfig: any = {
-			text: buttonText,
-			press: triggerDownload 
-				? () => this.triggerDownloadSpreadsheet()
-				: () => this.openSpreadsheetUploadDialog()
-		};
-
-		// Add optional properties if they exist
-		if (componentContainerData.buttonId) {
-			buttonConfig.id = this.createId(componentContainerData.buttonId);
-		}
-		
-		if (componentContainerData.buttonIcon) {
-			buttonConfig.icon = componentContainerData.buttonIcon;
-		}
-
-		return new Button(buttonConfig);
+		const buttonIcon = componentContainerData.buttonIcon;
+		return new Button({id: "ButtonExcelImport", text: buttonText, press: () => this.openSpreadsheetUploadDialog(), icon: buttonIcon });
 	}
 
 	//=============================================================================
@@ -271,22 +219,6 @@ export default class Component extends UIComponent {
 		this.spreadsheetUpload.openSpreadsheetUploadDialog(options);
 	}
 
-	async triggerDownloadSpreadsheet(deepDownloadConfig?: DeepDownloadConfig) {
-		if (!this.getContext()) {
-			// if loaded via ComponentContainer, context is not set
-			const context = this._getViewControllerOfControl(this.oContainer);
-			this.setContext(context);
-			// attach event from ComponentContainer
-			this._attachEvents(context);
-		}
-		await this.spreadsheetUpload.initializeComponent();
-		Log.debug("triggerDownloadSpreadsheet", undefined, "SpreadsheetUpload: Component");
-		if (deepDownloadConfig) {
-			this.setDeepDownloadConfig(Util.mergeDeepDownloadConfig(this.getDeepDownloadConfig() as DeepDownloadConfig, deepDownloadConfig));
-		}
-		this.spreadsheetUpload.triggerDownloadSpreadsheet();
-	}
-
 	/**
 	 * Attaches events to the component container based on the provided options.
 	 * @param context - The controller context to attach the events to.
@@ -299,9 +231,7 @@ export default class Component extends UIComponent {
 			uploadButtonPress: this.attachUploadButtonPress,
 			changeBeforeCreate: this.attachChangeBeforeCreate,
 			checkBeforeRead: this.attachCheckBeforeRead,
-			requestCompleted: this.attachRequestCompleted,
-			beforeDownloadFileProcessing: this.attachBeforeDownloadFileProcessing,
-			beforeDownloadFileExport: this.attachBeforeDownloadFileExport
+			requestCompleted: this.attachRequestCompleted
 		};
 		if (componentContainerOptions) {
 			for (const [eventName, attachMethod] of Object.entries(eventMethodMap)) {

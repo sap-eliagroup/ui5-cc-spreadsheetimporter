@@ -17,17 +17,14 @@ import Log from "sap/base/Log";
 import SheetHandler from "../SheetHandler";
 import Parser from "../Parser";
 import Button from "sap/m/Button";
-import { ArrayData, AvailableOptionsType, DeepDownloadConfig, FireEventReturnType } from "../../types";
+import { ArrayData, AvailableOptionsType, FireEventReturnType } from "../../types";
 import FlexBox from "sap/m/FlexBox";
 import JSONModel from "sap/ui/model/json/JSONModel";
 import Dialog from "sap/m/Dialog";
 import Select from "sap/m/Select";
 import Item from "sap/ui/core/Item";
-import SpreadsheetDownloadDialog from "../download/SpreadsheetDownloadDialog";
-import SpreadsheetGenerator from "../download/SpreadsheetGenerator";
-import SpreadsheetDownload from "../download/SpreadsheetDownload";
-import OData from "../odata/OData";
-import { Action } from "../../enums";
+import Control from "sap/ui/core/Control";
+import VBox from "sap/m/VBox";
 
 type InputType = {
 	[key: string]: {
@@ -42,7 +39,6 @@ type InputType = {
 export default class SpreadsheetUploadDialog extends ManagedObject {
 	spreadsheetUploadController: SpreadsheetUpload;
 	spreadsheetUploadDialog: SpreadsheetDialog;
-	spreadsheetDownloadDialog: SpreadsheetDownloadDialog;
 	component: Component;
 	previewHandler: Preview;
 	util: Util;
@@ -50,8 +46,6 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 	optionsHandler: OptionsDialog;
 	messageHandler: MessageHandler;
 	spreadsheetOptionsModel: JSONModel;
-	spreadsheetGenerator: SpreadsheetGenerator;
-	spreadsheetDownload: SpreadsheetDownload;
 
 	constructor(spreadsheetUploadController: SpreadsheetUpload, component: Component, componentI18n: ResourceModel, messageHandler: MessageHandler) {
 		super();
@@ -62,7 +56,6 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 		this.previewHandler = new Preview(this.util);
 		this.optionsHandler = new OptionsDialog(spreadsheetUploadController);
 		this.messageHandler = messageHandler;
-		this.spreadsheetDownloadDialog = new SpreadsheetDownloadDialog(this.spreadsheetUploadController, this);
 	}
 
 	async createSpreadsheetUploadDialog() {
@@ -72,7 +65,6 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 				strict: this.component.getStrict(),
 				hidePreview: this.component.getHidePreview(),
 				showOptions: this.component.getShowOptions(),
-				showDownloadButton: this.component.getShowDownloadButton(),
 				hideGenerateTemplateButton: false,
 				fileUploadValue: "",
 				densityClass: this.component._densityClass,
@@ -94,9 +86,7 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 			this.spreadsheetUploadDialog.attachAvailableOptionsChanged(this.onAvailableOptionsChanged.bind(this));
 			this.spreadsheetUploadDialog.attachFileDrop(this.onFileDrop.bind(this));
 		}
-		if (this.component.getStandalone() && 
-			this.component.getColumns().length === 0 && 
-			!this.component.getSpreadsheetTemplateFile()) {
+		if (this.component.getStandalone() && this.component.getColumns().length === 0) {
 			this.spreadsheetOptionsModel.setProperty("/hideGenerateTemplateButton", true);
 		}
 	}
@@ -164,8 +154,7 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 					return;
 				}
 				spreadsheetSheetsData = SheetHandler.sheet_to_json(workbook.Sheets[sheetName]);
-				const rawColumns = SheetHandler.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })[0] as Array<{rawValue: string}>;
-				columnNames = rawColumns.map(column => column.rawValue || column as unknown as string);
+				columnNames = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })[0] as string[];
 			}
 
 			if (!spreadsheetSheetsData || spreadsheetSheetsData.length === 0) {
@@ -194,10 +183,6 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 				}
 				if (!this.component.getSkipColumnsCheck()) {
 					this.messageHandler.checkColumnNames(columnNames, this.component.getFieldMatchType(), this.spreadsheetUploadController.typeLabelList);
-				}
-				if(this.component.getAction() === Action.Update){
-					this.messageHandler.checkDuplicateKeys(spreadsheetSheetsData);
-					this.messageHandler.checkMissingKeys(spreadsheetSheetsData);
 				}
 			}
 			this.spreadsheetUploadController.payload = spreadsheetSheetsData;
@@ -501,7 +486,7 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 							colWidths.push({ wch: colWidthDefault });
 						} else if (value.type === "Edm.DateTimeOffset" || value.type === "Edm.DateTime") {
 							let format;
-							const currentLang = await Util.getLanguage();
+							const currentLang = await this.getLanguage();
 							if (currentLang.startsWith("en")) {
 								format = "mm/dd/yyyy hh:mm AM/PM";
 							} else {
@@ -738,61 +723,15 @@ export default class SpreadsheetUploadDialog extends ManagedObject {
 		});
 	}
 
-	setODataHandler(odataHandler: OData) {
-		this.spreadsheetGenerator = new SpreadsheetGenerator(this.spreadsheetUploadController, this.component, odataHandler);
-		this.spreadsheetDownload = new SpreadsheetDownload(this.spreadsheetUploadController, this.component, odataHandler);
-	}
-
-	/**
-	 * Initializes the spreadsheet download process.
-	 * If showOptions is enabled in the DeepDownloadConfig, opens a dialog allowing users to configure download options.
-	 * Otherwise, directly triggers the spreadsheet download.
-	 * 
-	 * @returns {Promise<void>} A promise that resolves when the download process is initialized
-	 */
-	async onInitDownloadSpreadsheetProcess(): Promise<void> {
-		const showOptionsToUser = (this.component.getDeepDownloadConfig() as DeepDownloadConfig).showOptions;
-		if (showOptionsToUser) {
-			await this.spreadsheetDownloadDialog.createSpreadsheetDownloadDialog();
-			this.spreadsheetDownloadDialog.spreadsheetDownloadDialog.open();
-		} else {
-			this.onDownloadDataSpreadsheet();
+	private async getLanguage(): Promise<string> {
+		try {
+			// getCore is not available in UI5 version 2.0 and above, prefer this over sap.ui.getCore().getConfiguration().getLanguage()
+			const Localization = await Util.loadUI5RessourceAsync("sap/base/i18n/Localization");
+			return Localization.getLanguage();
+		} catch (error) {
+			Log.debug("sap/base/i18n/Localization not found", undefined, "SpreadsheetUpload: checkForODataErrors");
 		}
-	}
-
-	async onDownloadDataSpreadsheet(): Promise<void> {
-		// if deepLevel is 0, we set deepExport to false
-		if ((this.component.getDeepDownloadConfig() as DeepDownloadConfig).deepLevel === 0) {
-			(this.component.getDeepDownloadConfig() as DeepDownloadConfig).deepExport = false;
-		}
-		// if deepExport is false, we set deepLevel to 0
-		if ((this.component.getDeepDownloadConfig() as DeepDownloadConfig).deepExport === false) {
-			(this.component.getDeepDownloadConfig() as DeepDownloadConfig).deepLevel = 0;
-		}
-		// if deepLevel is greater 0, we set deepExport to true
-		if ((this.component.getDeepDownloadConfig() as DeepDownloadConfig).deepLevel > 0) {
-			(this.component.getDeepDownloadConfig() as DeepDownloadConfig).deepExport = true;
-		}
-		if (!this.spreadsheetUploadController.errorState) {
-			try {
-				const mainEntitySiblings = await this.spreadsheetDownload.fetchData(this.component.getDeepDownloadConfig() as DeepDownloadConfig);
-
-				let isDefaultPrevented = false;
-				try {
-					const asyncEventBeforeDownloadFileProcessing = await Util.fireEventAsync("beforeDownloadFileProcessing", { data: mainEntitySiblings }, this.component);
-					isDefaultPrevented = asyncEventBeforeDownloadFileProcessing.bPreventDefault;
-				} catch (error) {
-					Log.error("Error while calling the beforeDownloadFileProcessing event", error as Error, "SpreadsheetUploadDialog.ts");
-				}
-				if (!isDefaultPrevented) {
-					this.spreadsheetGenerator.downloadSpreadsheet(mainEntitySiblings, this.component.getDeepDownloadConfig() as DeepDownloadConfig);
-				}
-			} catch (error) {
-				console.error("Error in onDownloadDataSpreadsheet:", error);
-			}
-		} else {
-			Util.showError(this.spreadsheetUploadController.errorMessage, "SpreadsheetUpload.ts", "initialSetup");
-			Log.error("Error opening the dialog", undefined, "SpreadsheetUpload: SpreadsheetUpload");
-		}
+		// fallback for UI5 versions below 2.0
+		return sap.ui.getCore().getConfiguration().getLanguage();
 	}
 }

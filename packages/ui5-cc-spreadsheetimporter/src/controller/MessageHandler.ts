@@ -5,14 +5,10 @@ import SpreadsheetUpload from "./SpreadsheetUpload";
 import Util from "./Util";
 import Fragment from "sap/ui/core/Fragment";
 import JSONModel from "sap/ui/model/json/JSONModel";
-import { ValueState } from "sap/ui/core/library";
+import { MessageType, ValueState } from "sap/ui/core/library";
 import Log from "sap/base/Log";
-import { CustomMessageTypes, FieldMatchType, MessageType } from "../enums";
+import { CustomMessageTypes, FieldMatchType } from "../enums";
 import * as XLSX from "xlsx";
-import Text from "sap/m/Text";
-import Button from "sap/m/Button";
-import { DialogType, ButtonType } from "sap/m/library";
-import MetadataHandlerV4 from "./odata/MetadataHandlerV4";
 
 /**
  * @namespace cc.spreadsheetimporter.XXXnamespaceXXX
@@ -197,71 +193,6 @@ export default class MessageHandler extends ManagedObject {
 		return availableKeyColumns;
 	}
 
-	checkDuplicateKeys(data: ArrayData) {
-		const keyNames = MetadataHandlerV4.getAnnotationProperties(this.spreadsheetUploadController.context, this.spreadsheetUploadController.getOdataType()).properties.$Key as string[];
-		const seenKeys = new Map<string, number>();
-		
-		data.forEach((row, index) => {
-			const keys = keyNames
-				.filter(key => key !== "IsActiveEntity")
-				.map(key => {
-					const matchingColumn = Object.keys(row).find(col => col.includes(`[${key}]`));
-					const value = matchingColumn ? row[matchingColumn].rawValue : undefined;
-					return `${key}=${value}`;
-				});
-			const keyString = JSON.stringify(keys);
-			
-			if (seenKeys.has(keyString)) {
-				const errorMessage = {
-					title: this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.duplicateKeys"),
-					type: CustomMessageTypes.DuplicateKeys,
-					row: index + 2,
-					counter: 1,
-					ui5type: MessageType.Error,
-					formattedValue: keys.join(", ")
-				} as Messages;
-				this.addMessageToMessages(errorMessage);
-			} else {
-				seenKeys.set(keyString, index);
-			}
-		});
-	}
-
-	checkMissingKeys(data: ArrayData) {
-		// Get the key names from the metadata
-		const keyNames = MetadataHandlerV4.getAnnotationProperties(
-			this.spreadsheetUploadController.context,
-			this.spreadsheetUploadController.getOdataType()
-		).properties.$Key as string[];
-
-		// Exclude "IsActiveEntity" property as it is not mandatory
-		const mandatoryKeys = keyNames.filter(key => key !== "IsActiveEntity");
-
-		data.forEach((row, index) => {
-			// For each row, find which keys are missing or have empty values
-			const missingKeys = mandatoryKeys.filter((key) => {
-				const matchingColumn = Object.keys(row).find((col) => col.includes(`[${key}]`));
-				if (!matchingColumn) {
-					return true;
-				}
-				const value = row[matchingColumn].rawValue;
-				return value === undefined || value === null || value === "";
-			});
-
-			// If any mandatory keys are missing, create an error message
-			if (missingKeys.length > 0) {
-				const errorMessage = {
-					title: this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.missingKeys"), 
-					type: CustomMessageTypes.MissingKeys,
-					row: index + 2, // +2 because rows typically start at 2 in Excel
-					counter: 1,
-					ui5type: MessageType.Error
-				} as Messages;
-				this.addMessageToMessages(errorMessage);
-			}
-		});
-	}
-
 	areMessagesPresent(): boolean {
 		if (this.messages.some((message) => message.counter > 0)) {
 			return true;
@@ -272,54 +203,28 @@ export default class MessageHandler extends ManagedObject {
 	/**
 	 * Display messages.
 	 */
-	async displayMessages(strict?: boolean): Promise<void> {
-		return new Promise((resolve, reject) => {
-			Fragment.load({
-				name: "cc.spreadsheetimporter.XXXnamespaceXXX.fragment.MessagesDialog",
-				type: "XML",
-				controller: {
-					...this,
-					onCloseMessageDialog: () => {
-						this.messageDialog.close();
-						this.messageDialog.destroy();
-						// rest file uploader content
-						this.spreadsheetUploadController.resetContent();
-						reject(new Error("Operation cancelled by user"));
-					},
-					onContinue: async () => {
-						// check if messages has type "ObjectNotFound"
-						if (this.messages.some((message) => message.type.update)) {
-							await this.showConfirmDialog();
-							this.messageDialog.close();
-						} else {
-							this.messageDialog.close();
-							const spreadsheetUploadDialog = this.spreadsheetUploadController.getSpreadsheetUploadDialog();
-							const payloadArrayLength = this.spreadsheetUploadController.payloadArray.length;
-							(spreadsheetUploadDialog.getModel("info") as JSONModel).setProperty("/dataRows", payloadArrayLength);
-						}
-						resolve();
-					},
-					onDownloadErrors: () => {
-						this.onDownloadErrors();
-					}
-				}
-			}).then((dialog: Dialog) => {
-				this.messageDialog = dialog;
-				this.messageDialog.setModel(this.spreadsheetUploadController.componentI18n, "i18n");
-				this.messageDialog.setModel(new JSONModel(), "messages");
-				const messagesGrouped = this.groupMessages(this.messages);
-				const sortedMessagesGrouped = this.sortMessagesByTitle(messagesGrouped);
-				(this.messageDialog.getModel("messages") as JSONModel).setData(sortedMessagesGrouped);
-				const dialogState = this.getWorstType(sortedMessagesGrouped);
-				const infoModel = new JSONModel({
-					strict: this.spreadsheetUploadController.component.getStrict(),
-					strictParameter: strict,
-					dialogState: dialogState
-				});
-				this.messageDialog.setModel(infoModel, "info");
-				this.messageDialog.open();
-			});
+	async displayMessages(strict?: boolean) {
+		this.messageDialog = (await Fragment.load({
+			name: "cc.spreadsheetimporter.XXXnamespaceXXX.fragment.MessagesDialog",
+			type: "XML",
+			controller: this
+		})) as Dialog;
+		this.messageDialog.setModel(this.spreadsheetUploadController.componentI18n, "i18n");
+		this.messageDialog.setModel(new JSONModel(), "messages");
+		const messagesGrouped = this.groupMessages(this.messages);
+		const sortedMessagesGrouped = this.sortMessagesByTitle(messagesGrouped);
+		Log.debug("sortedMessagesGrouped", undefined, "SpreadsheetUpload: MessageHandler", () =>
+			this.spreadsheetUploadController.component.logger.returnObject({ sortedMessagesGrouped: sortedMessagesGrouped })
+		);
+		(this.messageDialog.getModel("messages") as JSONModel).setData(sortedMessagesGrouped);
+		const dialogState = this.getWorstType(sortedMessagesGrouped);
+		const infoModel = new JSONModel({
+			strict: this.spreadsheetUploadController.component.getStrict(),
+			strictParameter: strict,
+			dialogState: dialogState
 		});
+		this.messageDialog.setModel(infoModel, "info");
+		this.messageDialog.open();
 	}
 
 	groupMessages(messages: Messages[]): GroupedMessage[] {
@@ -337,12 +242,6 @@ export default class MessageHandler extends ManagedObject {
 				messageText = this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.errorInRowWithValueFormatted", [message.row, message.formattedValue, message.rawValue]);
 			} else if (message.rawValue) {
 				messageText = this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.errorInRowWithValue", [message.row, message.rawValue]);
-			} else if (message.type === CustomMessageTypes.ObjectNotFound) {
-				messageText = this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.objectNotFoundWithKeys", [message.formattedValue]);
-			} else if (message.type === CustomMessageTypes.DraftEntityMismatch) {
-				messageText = this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.draftEntityMismatchRow", message.formattedValue);
-			} else if (message.type === CustomMessageTypes.DuplicateKeys) {
-				messageText = this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.duplicateKeysRow", [message.formattedValue]);
 			} else {
 				messageText = this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.errorInRow", [message.row]);
 			}
@@ -374,23 +273,11 @@ export default class MessageHandler extends ManagedObject {
 		this.spreadsheetUploadController.resetContent();
 	}
 
-	private async onContinue() {
-		try {
-			// check if messages has type "ObjectNotFound"
-			if (this.messages.some((message) => message.type.update)) {
-				await this.showConfirmDialog();
-				// continue with successful fetched objects
-			}
-			
-			this.messageDialog.close();
-			const spreadsheetUploadDialog = this.spreadsheetUploadController.getSpreadsheetUploadDialog();
-			const payloadArrayLength = this.spreadsheetUploadController.payloadArray.length;
-			(spreadsheetUploadDialog.getModel("info") as JSONModel).setProperty("/dataRows", payloadArrayLength);
-			
-		} catch (error) {
-			// Handle cancellation
-			this.spreadsheetUploadController.resetContent();
-		}
+	private onContinue() {
+		this.messageDialog.close();
+		const spreadsheetUploadDialog = this.spreadsheetUploadController.getSpreadsheetUploadDialog();
+		const payloadArrayLength = this.spreadsheetUploadController.payloadArray.length;
+		(spreadsheetUploadDialog.getModel("info") as JSONModel).setProperty("/dataRows", payloadArrayLength);
 	}
 
 	onDownloadErrors() {
@@ -482,38 +369,5 @@ export default class MessageHandler extends ManagedObject {
 
 		// Convert MessageType to ValueState
 		return worstType as unknown as ValueState;
-	}
-
-	private showConfirmDialog(): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const confirmDialog = new Dialog({
-				type: DialogType.Message,
-				title: this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.confirmTitle"),
-				resizable: false,
-				content: new Text({ 
-					text: this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.confirmMessage") 
-				}),
-				beginButton: new Button({
-					type: ButtonType.Emphasized,
-					text: this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.continue"),
-					press: () => {
-						confirmDialog.close();
-						resolve();
-					}
-				}),
-				endButton: new Button({
-					text: this.spreadsheetUploadController.util.geti18nText("spreadsheetimporter.cancel"),
-					press: () => {
-						confirmDialog.close();
-						reject(new Error("Operation cancelled by user"));
-					}
-				}),
-				afterClose: () => {
-					confirmDialog.destroy();
-				}
-			});
-
-			confirmDialog.open();
-		});
 	}
 }

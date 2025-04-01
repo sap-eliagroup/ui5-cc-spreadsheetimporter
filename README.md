@@ -1,6 +1,6 @@
 # UI5 `ui5-cc-spreadsheetimporter`
 
-This monorepo houses the UI5 Component `ui5-cc-spreadsheetimporter`.
+This monorepo houses the UI5 Component `ui5-cc-spreadsheetimporter` and the generator for seamless integration of the component into your app.
 
 `ui5-cc-spreadsheetimporter` is a UI5 Component designed for the integration of Spreadsheet Upload functionality into Fiori Elements and other UI5 Apps.  
 It enables the bulk upload of data, independent of the backend, OData version, and Fiori scenario, by extracting data from an Spreadsheet file and leveraging standard APIs.  
@@ -47,13 +47,9 @@ https://docs.spreadsheet-importer.com/pages/Development/GettingStarted/
 
 See the [CHANGELOG.md](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/blob/main/packages/ui5-cc-spreadsheetimporter/CHANGELOG.md)
 
-# License
+## Changelog `generator-ui5-spreadsheetimporter`
 
-Versions 1.x (including 1.7.x and below) are licensed under the Apache License 2.0 (see the [v1.x branch](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/tree/v1.x)).
-
-Versions 2.0.0 and above are licensed under the SpreadsheetImporter Commercial License. Non-production use is free; production or resale requires a paid license.
-
-For production or commercial usage, please see https://spreadsheet-importer.com/ or contact marian@marianzeis.de.
+Check the [CHANGELOG.md](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/blob/main/packages/ui5-cc-spreadsheetimporter-generator/CHANGELOG.md)
 
 # Open in GitHub Codespaces
 

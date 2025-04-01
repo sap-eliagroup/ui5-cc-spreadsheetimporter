@@ -9,7 +9,6 @@ declare module "./Component" {
      */
     interface $ComponentSettings extends $UIComponentSettings {
         spreadsheetFileName?: string | PropertyBindingInfo;
-        action?: string | PropertyBindingInfo;
         context?: object | PropertyBindingInfo | `{${string}}`;
         columns?: string[] | PropertyBindingInfo | `{${string}}`;
         excludeColumns?: string[] | PropertyBindingInfo | `{${string}}`;
@@ -43,16 +42,11 @@ declare module "./Component" {
         debug?: boolean | PropertyBindingInfo | `{${string}}`;
         componentContainerData?: object | PropertyBindingInfo | `{${string}}`;
         bindingCustom?: object | PropertyBindingInfo | `{${string}}`;
-        showDownloadButton?: boolean | PropertyBindingInfo | `{${string}}`;
-        deepDownloadConfig?: object | PropertyBindingInfo | `{${string}}`;
-        updateConfig?: object | PropertyBindingInfo | `{${string}}`;
         preFileProcessing?: (event: Component$PreFileProcessingEvent) => void;
         checkBeforeRead?: (event: Component$CheckBeforeReadEvent) => void;
         changeBeforeCreate?: (event: Component$ChangeBeforeCreateEvent) => void;
         requestCompleted?: (event: Component$RequestCompletedEvent) => void;
         uploadButtonPress?: (event: Component$UploadButtonPressEvent) => void;
-        beforeDownloadFileProcessing?: (event: Component$BeforeDownloadFileProcessingEvent) => void;
-        beforeDownloadFileExport?: (event: Component$BeforeDownloadFileExportEvent) => void;
     }
 
     export default interface Component {
@@ -60,10 +54,6 @@ declare module "./Component" {
         // property: spreadsheetFileName
         getSpreadsheetFileName(): string;
         setSpreadsheetFileName(spreadsheetFileName: string): this;
-
-        // property: action
-        getAction(): string;
-        setAction(action: string): this;
 
         // property: context
         getContext(): object;
@@ -197,18 +187,6 @@ declare module "./Component" {
         getBindingCustom(): object;
         setBindingCustom(bindingCustom: object): this;
 
-        // property: showDownloadButton
-        getShowDownloadButton(): boolean;
-        setShowDownloadButton(showDownloadButton: boolean): this;
-
-        // property: deepDownloadConfig
-        getDeepDownloadConfig(): object;
-        setDeepDownloadConfig(deepDownloadConfig: object): this;
-
-        // property: updateConfig
-        getUpdateConfig(): object;
-        setUpdateConfig(updateConfig: object): this;
-
         // event: preFileProcessing
         attachPreFileProcessing(fn: (event: Component$PreFileProcessingEvent) => void, listener?: object): this;
         attachPreFileProcessing<CustomDataType extends object>(data: CustomDataType, fn: (event: Component$PreFileProcessingEvent, data: CustomDataType) => void, listener?: object): this;
@@ -238,18 +216,6 @@ declare module "./Component" {
         attachUploadButtonPress<CustomDataType extends object>(data: CustomDataType, fn: (event: Component$UploadButtonPressEvent, data: CustomDataType) => void, listener?: object): this;
         detachUploadButtonPress(fn: (event: Component$UploadButtonPressEvent) => void, listener?: object): this;
         fireUploadButtonPress(parameters?: Component$UploadButtonPressEventParameters): boolean;
-
-        // event: beforeDownloadFileProcessing
-        attachBeforeDownloadFileProcessing(fn: (event: Component$BeforeDownloadFileProcessingEvent) => void, listener?: object): this;
-        attachBeforeDownloadFileProcessing<CustomDataType extends object>(data: CustomDataType, fn: (event: Component$BeforeDownloadFileProcessingEvent, data: CustomDataType) => void, listener?: object): this;
-        detachBeforeDownloadFileProcessing(fn: (event: Component$BeforeDownloadFileProcessingEvent) => void, listener?: object): this;
-        fireBeforeDownloadFileProcessing(parameters?: Component$BeforeDownloadFileProcessingEventParameters): this;
-
-        // event: beforeDownloadFileExport
-        attachBeforeDownloadFileExport(fn: (event: Component$BeforeDownloadFileExportEvent) => void, listener?: object): this;
-        attachBeforeDownloadFileExport<CustomDataType extends object>(data: CustomDataType, fn: (event: Component$BeforeDownloadFileExportEvent, data: CustomDataType) => void, listener?: object): this;
-        detachBeforeDownloadFileExport(fn: (event: Component$BeforeDownloadFileExportEvent) => void, listener?: object): this;
-        fireBeforeDownloadFileExport(parameters?: Component$BeforeDownloadFileExportEventParameters): this;
     }
 
     /**
@@ -292,21 +258,6 @@ declare module "./Component" {
     }
 
     /**
-     * Interface describing the parameters of Component's 'beforeDownloadFileProcessing' event.
-     */
-    export interface Component$BeforeDownloadFileProcessingEventParameters {
-        data?: object;
-    }
-
-    /**
-     * Interface describing the parameters of Component's 'beforeDownloadFileExport' event.
-     */
-    export interface Component$BeforeDownloadFileExportEventParameters {
-        workbook?: object;
-        filename?: string;
-    }
-
-    /**
      * Type describing the Component's 'preFileProcessing' event.
      */
     export type Component$PreFileProcessingEvent = Event<Component$PreFileProcessingEventParameters>;
@@ -330,14 +281,4 @@ declare module "./Component" {
      * Type describing the Component's 'uploadButtonPress' event.
      */
     export type Component$UploadButtonPressEvent = Event<Component$UploadButtonPressEventParameters>;
-
-    /**
-     * Type describing the Component's 'beforeDownloadFileProcessing' event.
-     */
-    export type Component$BeforeDownloadFileProcessingEvent = Event<Component$BeforeDownloadFileProcessingEventParameters>;
-
-    /**
-     * Type describing the Component's 'beforeDownloadFileExport' event.
-     */
-    export type Component$BeforeDownloadFileExportEvent = Event<Component$BeforeDownloadFileExportEventParameters>;
 }

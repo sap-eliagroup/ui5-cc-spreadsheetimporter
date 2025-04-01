@@ -42,14 +42,14 @@ export default class ODataMessageHandler extends ManagedObject {
 		this.messageDialog.close();
 		// reset message manager messages
 		try {
-			// sap.ui.core.Messaging is only available in UI5 version 1.118 and above, prefer this over sap.ui.getCore().getMessageManager() = Util.loadUI5RessourceAsync("sap/ui/core/Messaging");
+			// sap.ui.core.Messaging is only available in UI5 version 1.118 and above, prefer this over sap.ui.getCore().getMessageManager()saging = Util.loadUI5RessourceAsync("sap/ui/core/Messaging");
 			const Messaging = await Util.loadUI5RessourceAsync("sap/ui/core/Messaging");
 			Messaging.removeAllMessages();
 			return;
 		} catch (error) {
 			Log.debug("sap/ui/core/Messaging not found", undefined, "SpreadsheetUpload: checkForODataErrors");
 		}
-		// ui5lint-disable-next-line -- fallback for UI5 versions below 1.118
+		// fallback for UI5 versions below 1.118
 		sap.ui.getCore().getMessageManager().removeAllMessages();
 	}
 }

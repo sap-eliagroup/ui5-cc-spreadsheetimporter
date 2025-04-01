@@ -99,7 +99,7 @@ export default class MetadataHandlerV2 extends MetadataHandler {
 		} catch (error) {
 			Log.debug(`SpreadsheetUpload: ${propertyName} not found as a LineItem Label`, undefined, "SpreadsheetUpload: MetadataHandlerV2");
 		}
-		if (typeof label === 'string' && label.startsWith("{") && label.endsWith("}")) {
+		if (label.startsWith("{") && label.endsWith("}")) {
 			try {
 				label = this.parseI18nText(label, this.spreadsheetUploadController.view);
 			} catch (error) {
@@ -140,13 +140,5 @@ export default class MetadataHandlerV2 extends MetadataHandler {
 			}
 		}
 		return keys;
-	}
-
-	getODataEntitiesRecursive(entityName: string, deepLevel: number): any {
-		throw new Error("Method not implemented.");
-	}
-
-	getKeys(binding: any, payload: any, IsActiveEntity?: boolean, excludeIsActiveEntity: boolean = false): Record<string, any> {
-		throw new Error("Method not implemented.");
 	}
 }

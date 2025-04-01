@@ -8,9 +8,6 @@ This component provides functionality for the bulk upload of data and the quick 
 For information about the currently supported OData and UI5 Versions, click [here](./pages/SupportVersions.md).  
 A quick integration tutorial for this component is available on YouTube [here](https://www.youtube.com/watch?v=dODt9ZWmi4A).
 
-!!! danger "Commercial License Required"
-    This component is licensed under the SpreadsheetImporter Commercial License since version 2.0.0. For details, see [LICENSE.md](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/blob/main/LICENSE.md). The version 1.x is licensed under the Apache License 2.0 and remains free of charge but no major updates will be provided.
-
 ## Feature Overview
 
 - Supports upload from List Report/Object Page in Fiori Elements with or without draft
@@ -25,6 +22,7 @@ A quick integration tutorial for this component is available on YouTube [here](h
 - Functionality to preview uploaded data
 - Automatic draft activation
 - Button control for simplified integration
+- Generator for immediate integration
 
 ## **Support**
 
