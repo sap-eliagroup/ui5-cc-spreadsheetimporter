@@ -8,21 +8,23 @@ on:
 jobs:
   test-wdi5:
     runs-on: ubuntu-latest
-    if: "github.event.pull_request.title != 'chore: release main'"
+    if: "github.event.pull_request.title != 'chore: release main' && !github.event.pull_request.draft"
     strategy:
       fail-fast: false
       matrix:
-        scenario: ["ordersv2fe", "ordersv4fe", "ordersv2fenondraft", "ordersv2freestylenondraftopenui5", "ordersv2freestylenondraft"]
+        scenario: ["ordersv2fe", "ordersv4fe", "ordersv2fenondraft", "ordersv2freestylenondraftopenui5", "ordersv2freestylenondraft", "ordersv4freestyle"]
         ui5version: [120, 108, 96, 84, 71] # 120 as soon as wdi5 issue is fixed
         exclude:
           - scenario: ordersv4fe
             ui5version: 71
-          # - scenario: ordersv4fets
-          #   ui5version: 71
-          # - scenario: ordersv4fets
-          #   ui5version: 84
-          # - scenario: ordersv4fets
-          #   ui5version: 96
+          - scenario: ordersv4freestyle
+            ui5version: 71
+          - scenario: ordersv4freestyle
+            ui5version: 84
+          - scenario: ordersv4freestyle
+            ui5version: 96
+          - scenario: ordersv4freestyle
+            ui5version: 108
 
     steps:
       # - name: update chrome
@@ -42,7 +44,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - run: corepack enable pnpm
+      - run: npm i -g --force corepack && corepack enable
       - name: use node 20
         uses: actions/setup-node@v4
         with:
@@ -78,9 +80,9 @@ jobs:
       - name: Run Build
         run: pnpm build
 
-      - name: install @sap/cds-dk
+      - name: install @sap/cds-dk@8.8.2
         run: |
-          npm i -g @sap/cds-dk
+          npm i -g @sap/cds-dk@8.8.2
 
       # run app      # wait for cap server to install ui5 component, remove when switch to fiori tools
       - name: start cap server
@@ -94,7 +96,9 @@ jobs:
 
       # run wdi5 tests
       - name: test wdi5 ${{ matrix.scenario }} ui5 ${{ matrix.ui5version }}
+        id: wdi5_test
         if: matrix.scenario != 'ordersv4fecds'
+        continue-on-error: true
         run: |
           while ! nc -z localhost 4004; do sleep 0.1; done
           while ! nc -z localhost ${{ env.TESTAPPPORT }}; do sleep 0.1; done
@@ -112,3 +116,18 @@ jobs:
         if: matrix.scenario == 'ordersv4fecds'
         run: |
           pnpm --filter ui5-cc-spreadsheetimporter-sample test -- -- --headless ${{ matrix.scenario }} ${{ matrix.ui5version }}
+
+      - name: Upload Timeline Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeline-report-${{ matrix.scenario }}-${{ matrix.ui5version }}
+          path: ./examples/reports/timeline
+
+      # Optional: Fail the workflow if tests failed
+      - name: Check Test Results
+        if: always()
+        run: |
+          if [[ "${{ steps.wdi5_test.outcome }}" == "failure" ]]; then
+            exit 1
+          fi

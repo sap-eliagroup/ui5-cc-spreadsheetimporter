@@ -1,15 +1,24 @@
+!!! danger "Commercial License Required"
+    This component is licensed under the SpreadsheetImporter Commercial License since version 2.0.0. For details, see [LICENSE.md](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/blob/main/LICENSE.md). The version 1.x is licensed under the Apache License 2.0 and remains free of charge but no major updates will be provided.
+
 ## Deployment Strategy
 
-We recommend **centralized deployment** for this component, as the decentralized or packaged deployment has known issues when used with ABAP systems and SAP Business Technology Platform (BTP). Use decentralized deployment only if centralized deployment is not feasible.
+We recommend different deployment approaches depending on your platform:
 
-For decentralized deployment in ABAP, see [ABAP Component Deployment](#component-deployment). For BTP deployment, special considerations are necessary, which are detailed in [BTP Deployment](#btp-deployment). A full BTP deployment example is available in this [sample project](https://github.com/spreadsheetimporter/sample-full-btp).
+- **For ABAP systems**: Only **centralized deployment** is possible. Decentralized deployment is not supported for ABAP systems.
+- **For SAP Business Technology Platform (BTP)**: **Decentralized deployment** is recommended, though centralized deployment is also possible.
+
+For decentralized deployment in ABAP, refer to [ABAP Component Deployment](#component-deployment). For BTP deployment, special considerations are necessary, which are detailed in [BTP Deployment](#btp-deployment). A full BTP deployment example is available in this [sample project](https://github.com/spreadsheetimporter/sample-full-btp).
 
 ### Decentralized Deployment
 
-!!! warning "Decentralized Deployment"
-    This method is **not recommended**. Please use the [Central Deployment](CentralDeployment.md) instead.
+!!! warning "Decentralized Deployment for ABAP"
+    This method is **not possible for ABAP systems**. For ABAP, please use [Central Deployment](CentralDeployment.md) instead.
 
-In decentralized deployment, the component is included directly in each app and deployed with it. For ABAP-specific instructions, refer to [ABAP Component Deployment](#component-deployment).
+!!! info "Decentralized Deployment for BTP"
+    For BTP applications, decentralized deployment is the recommended approach.
+
+In decentralized deployment, the component is included directly in each app and deployed with it. For ABAP-specific instructions, refer to [ABAP Component Deployment](#component-deployment). For BTP-specific considerations, refer to [BTP Deployment](#btp-deployment).
 
 ### Central Deployment
 
@@ -17,15 +26,19 @@ In centralized deployment, the Spreadsheet Upload component is stored centrally,
 
 ## Setup
 
-To integrate the `ui5-cc-spreadsheetimporter` component manually, follow the steps below. For a simplified setup, you can also use the [Yo generator](Generator.md).
+To integrate the `ui5-cc-spreadsheetimporter` component manually, follow the steps below.
 
 ### Requirements
 
-- Node.js v16.18.0, v18.12.0 or higher
+- Node.js v16.18.0, v18.12.0, or higher
 - npm v8.0.0 or higher
 - UI5 CLI v3.0.0 or higher
 
 ### Setup for Decentralized Deployment
+
+There are two ways to include the component in your application:
+
+#### Option A: Install from npm
 
 1\. **Install the component from npm:**
 
@@ -33,14 +46,14 @@ To integrate the `ui5-cc-spreadsheetimporter` component manually, follow the ste
    npm install ui5-cc-spreadsheetimporter
    ```
 
-2\. **Add `resourceRoots` to your `manifest.json` under `sap.ui5`:**
+2\. **Add `resourceRoots` to the `sap.ui5` section of your `manifest.json`:**
 
-   !!! warning "Version Management"
-       Ensure your `ui5-cc-spreadsheetimporter` version is up to date in your `manifest.json` whenever updating the module. For more information, see [Version Namespace](https://blogs.sap.com/2023/03/12/create-a-ui5-custom-library-with-versioning-using-a-multi-version-namespace/).
+!!! warning "Version Management"
+    Whenever you update the `ui5-cc-spreadsheetimporter` module, ensure that the version specified in your `manifest.json` is up to date. For more information, see [Version Namespace](https://blogs.sap.com/2023/03/12/create-a-ui5-custom-library-with-versioning-using-a-multi-version-namespace/).
 
    ```json
    "resourceRoots": {
-     "cc.spreadsheetimporter.v1_4_2": "./thirdparty/customcontrol/spreadsheetimporter/v1_4_2"
+     "cc.spreadsheetimporter.v2_0_0": "./thirdparty/customcontrol/spreadsheetimporter/v2_0_0"
    }
    ```
 
@@ -48,33 +61,61 @@ To integrate the `ui5-cc-spreadsheetimporter` component manually, follow the ste
 
    ```json
    "scripts": {
-     "build": "ui5 build --config=ui5.yaml --all --clean-dest --dest dist",
+     "build": "ui5 build --config=ui5.yaml --all --clean-dest --dest dist"
    }
    ```
 
-4\. **Add `componentUsages` to your `manifest.json` under `sap.ui5`:**
+#### Option B: Using jsDelivr CDN
 
-   !!! warning "Version Management"
-       Ensure your `ui5-cc-spreadsheetimporter` version is up to date in your `manifest.json` whenever updating the module. For more information, see [Version Namespace](https://blogs.sap.com/2023/03/12/create-a-ui5-custom-library-with-versioning-using-a-multi-version-namespace/).
+For BTP applications (or apps using the index.html bootstrap), you can use jsDelivr CDN to include the component directly without npm installation:
+
+1\. **Add the CDN resource path to your `index.html` bootstrap:**
+
+   ```html
+   <script
+     id="sap-ui-bootstrap"
+     src="https://sapui5.hana.ondemand.com/resources/sap-ui-core.js"
+     data-sap-ui-theme="sap_horizon"
+     data-sap-ui-resourceroots='{
+       "your.app.namespace": "./",
+       "cc.spreadsheetimporter.v2_0_0": "https://cdn.jsdelivr.net/npm/ui5-cc-spreadsheetimporter@1.7.3/dist"
+     }'
+     data-sap-ui-oninit="module:sap/ui/core/ComponentSupport"
+     data-sap-ui-async="true"
+     data-sap-ui-frameOptions="trusted">
+   </script>
+   ```
+
+!!! info "Version Specification"
+    Always specify the exact version in the CDN URL (e.g., `@1.7.3`) to ensure consistent behavior of your application.
+
+For more information on using jsDelivr CDN, see the [jsDelivr documentation](https://www.jsdelivr.com/documentation#id-npm).
+
+### Using the Component in your App
+
+1\. **Add `componentUsages` to the `sap.ui5` section of your `manifest.json` (same for both options):**
+
+!!! warning "Version Management"
+    Whenever you update the `ui5-cc-spreadsheetimporter` module, ensure that the version specified in your `manifest.json` is up to date. For more information, see [Version Namespace](https://blogs.sap.com/2023/03/12/create-a-ui5-custom-library-with-versioning-using-a-multi-version-namespace/).
 
    ```json
    "componentUsages": {
      "spreadsheetImporter": {
-       "name": "cc.spreadsheetimporter.v1_4_2"
+       "name": "cc.spreadsheetimporter.v2_0_0"
      }
    }
    ```
 
-5\. **Optional: Handle the "component does not exist" error**
+2\. **Optional: Handle the "component does not exist" error**
 
-   If you encounter the `component does not exist` error when deploying to an SAP System (S/4 On-Premise or SAP BTP ABAP environment), add the following to your `manifest.json`:
+   If you encounter the error `component does not exist` when deploying to an SAP system (S/4 On-Premise or SAP BTP ABAP environment), add the following to your `manifest.json`:
 
-   !!! warning "Resource Roots Path"
-       Ensure the `resourceRoots` path is correct, especially the lowercase format change since version 0.34.0.
+!!! warning "Resource Roots Path"
+    Ensure the `resourceRoots` path is correct, especially considering the lowercase format change since version 0.34.0.
 
    ```json
    "sap.app": {
-     "embeds": ["thirdparty/customcontrol/spreadsheetimporter/v1_4_2"]
+     "embeds": ["thirdparty/customcontrol/spreadsheetimporter/v2_0_0"]
    }
    ```
 
@@ -82,15 +123,15 @@ To integrate the `ui5-cc-spreadsheetimporter` component manually, follow the ste
 
 1\. **Deploy the component using your desired version.** Refer to [Central Deployment](CentralDeployment.md) for detailed instructions.
 
-2\. **Add `componentUsages` to your `manifest.json` under `sap.ui5`:**
+2\. **Add `componentUsages` to the `sap.ui5` section of your `manifest.json`:**
 
-   !!! warning "Version Management"
-       Ensure your `ui5-cc-spreadsheetimporter` version is up to date in your `manifest.json` whenever updating the module. For more information, see [Version Namespace](https://blogs.sap.com/2023/03/12/create-a-ui5-custom-library-with-versioning-using-a-multi-version-namespace/). Ensure the version is available in the system.
+!!! warning "Version Management"
+    Whenever you update the `ui5-cc-spreadsheetimporter` module, ensure that the version specified in your `manifest.json` is up to date. For more information, see [Version Namespace](https://blogs.sap.com/2023/03/12/create-a-ui5-custom-library-with-versioning-using-a-multi-version-namespace/). Also, ensure the version is available in the system.
 
    ```json
    "componentUsages": {
      "spreadsheetImporter": {
-       "name": "cc.spreadsheetimporter.v1_4_2"
+       "name": "cc.spreadsheetimporter.v2_0_0"
      }
    }
    ```
@@ -100,17 +141,20 @@ To integrate the `ui5-cc-spreadsheetimporter` component manually, follow the ste
 !!! warning "OData Version Differences"
     There are different implementations for Fiori Elements depending on the OData version.
 
-To start the Spreadsheet Upload Dialog, add a button in your Fiori Elements App. The [Guided Development](https://blogs.sap.com/2021/08/16/getting-up-to-speed-with-sap-fiori-tools-guided-development-overview/) extension is a recommended way to add a custom action:
+If something may not work as expected, set the [`debug`](Configuration.md#debug) property to `true` in the component configuration. This will log additional information to the console that can help diagnose the issue.  
+Search for `Spreadsheet Importer` in the console output to find the log entries.  
+
+To start the Spreadsheet Upload Dialog, add a button to your Fiori Elements app. The [Guided Development](https://blogs.sap.com/2021/08/16/getting-up-to-speed-with-sap-fiori-tools-guided-development-overview/) extension is a recommended way to add a custom action:
 
 ![Guided Development](./../images/guided_development.png){ loading=lazy }
 
-After adding the custom action, implement your custom code either with [V2](#custom-code_1) or [V4](#custom-code). You can also use a controller extension in Fiori Elements. See the [Fiori Elements V4 Example App](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/tree/main/examples/packages/ordersv4fe) for an example.
+After adding the custom action, implement your custom code using either [OData V2](#custom-code_1) or [OData V4](#custom-code). You can also use a controller extension in Fiori Elements. For an example, see the [Fiori Elements V4 Example App](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/tree/main/examples/packages/ordersv4fe).
 
 ## Starting with Fiori Elements (OData V4)
 
 ### Manifest.json Extension
 
-Here is an example of a custom action from the [sample app](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/blob/main/examples/packages/ordersv4fe/webapp/manifest.json) for the object page. This example adds a button to the order items table on the object page. If there are multiple tables, always specify the relevant `tableId`. Use `"enabled": "{ui>/isEditable}"` to automatically disable the button when the page is not in edit mode.
+Here is an example of a custom action from the [sample app](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/blob/main/examples/packages/ordersv4fe/webapp/manifest.json) for the object page. This example adds a button to the order items table on the object page. If there are multiple tables, always specify the relevant `tableId`. By using `"enabled": "{ui>/isEditable}"`, you can automatically disable the button when the page is not in edit mode.
 
 ```json
 "OrdersObjectPage": {
@@ -148,13 +192,16 @@ Here is an example of a custom action from the [sample app](https://github.com/s
 
 ### Custom Code
 
-The following code sets the busy indicator, creates the component if not already created, and opens the dialog. The `context` attribute is mandatory to allow the component to access the app's context, including binding paths and the model. You can pass options like `context` at runtime using the `openSpreadsheetUploadDialog` method. This is useful when opening the dialog for specific tables (see [TableSelector](TableSelector.md)).
+!!! tip "Using tableId Configuration"
+    It's highly recommended to explicitly specify the `tableId` in your configuration. The component searches for tables in the view, and sometimes additional tables may appear (e.g., through value helps), which can lead to errors when more than one table is available. Using `tableId` ensures the component always targets the correct table. Use the [UI5 Inspector](https://chromewebstore.google.com/detail/ui5-inspector/bebecogbafbighhaildooiibipcnbngo?hl=de) to find the correct table ID ([`sap.m.Table`](https://ui5.sap.com/#/api/sap.m.Table) and [`sap.ui.table.Table`](https://ui5.sap.com/#/api/sap.ui.table.Table) is supported).
+
+The following code sets the busy indicator, creates the component if it hasn't been created already, and opens the dialog. The `context` attribute is mandatory to allow the component to access the app's context, including binding paths and the model. You can pass options like `context` and `tableId` at runtime using the `openSpreadsheetUploadDialog` method. This is useful when opening the dialog for specific tables (see [TableSelector](TableSelector.md)).
 
 ```javascript
 openSpreadsheetUploadDialog: async function (event) {
-  this.getView().setBusyIndicatorDelay(0);
-  this.getView().setBusy(true);
-  this.spreadsheetUpload = await this.getView()
+  this.editFlow.getView().setBusyIndicatorDelay(0);
+  this.editFlow.getView().setBusy(true);
+  this.spreadsheetUpload = await this.editFlow.getView()
     .getController()
     .getAppComponent()
     .createComponent({
@@ -162,10 +209,11 @@ openSpreadsheetUploadDialog: async function (event) {
       async: true,
       componentData: {
         context: this,
+        tableId: "ui.v4.ordersv4fe::OrdersObjectPage--fe::table::Items::LineItem-innerTable"
       },
     });
   this.spreadsheetUpload.openSpreadsheetUploadDialog();
-  this.getView().setBusy(false);
+  this.editFlow.getView().setBusy(false);
 }
 ```
 
@@ -215,8 +263,6 @@ Here is an example of a custom action from the [sample app](https://github.com/s
 ### Custom Code
 
 ```javascript
-
-
 openSpreadsheetUploadDialog: async function (event) {
   this.getView().setBusyIndicatorDelay(0);
   this.getView().setBusy(true);
@@ -228,6 +274,7 @@ openSpreadsheetUploadDialog: async function (event) {
       async: true,
       componentData: {
         context: this,
+        tableId: "ui.v2.ordersv2::DetailsPage::Items::Table"
       },
     });
   this.spreadsheetUpload.openSpreadsheetUploadDialog();
@@ -243,7 +290,7 @@ openSpreadsheetUploadDialog: async function (event) {
 
 These instructions apply generally to UI5 Reuse Components, not just the Spreadsheet Importer (see [UI5 Reuse Components](https://sapui5.hana.ondemand.com/sdk/#/topic/6314fcd2510648fbaad3cee8a421030d.html)).
 
-When deploying the component decentrally to an ABAP system, its namespace is registered in the app index, the same as with central deployment. After deploying decentrally for the first time, you can use the component centrally (see [Setup Central Deployment](#setup-central-deployment)). However, you can only deploy the component decentrally once because the namespace can only exist once in the app index.
+When deploying the component decentrally to an ABAP system, its namespace is registered in the app index, just as it is with central deployment. After deploying decentrally for the first time, you can use the component centrally (see [Setup Central Deployment](#setup-central-deployment)). However, you can only deploy the component decentrally once because the namespace can only exist once in the app index.
 
 This is why we recommend starting with central deployment.
 
@@ -265,7 +312,7 @@ openSpreadsheetUploadDialog: async function (oEvent) {
         context: this,
       },
       url: "/sap/bc/ui5_ui5/sap/Z_XUP_v0_33_2",
-      name: "cc.spreadsheetimporter.v1_4_2"
+      name: "cc.spreadsheetimporter.v2_0_0"
     });
   this.spreadsheetUpload.openSpreadsheetUploadDialog();
   this.getView().setBusy(false);
@@ -276,16 +323,16 @@ This method can be used as an alternative to `resourceRoots` in the `manifest.js
 
 #### Error: Library/Component Used in Application Does Not Exist
 
-When deploying the app to your ABAP system, you might encounter an error like `SAPUI5 library/component cc.spreadsheetimporter.v1_4_2 used in application Z*** does not exist`. The application is deployed, but the service returns an error.
+When deploying the app to your ABAP system, you might encounter an error like `SAPUI5 library/component cc.spreadsheetimporter.v2_0_0 used in application Z*** does not exist`. The application is deployed, but the service returns an error.
 
 To avoid this error, add the following to your `manifest.json` file:
 
 !!! warning "Resource Roots Path"
-    Ensure the `resourceRoots` path is correct, especially the lowercase format change since version 0.34.0.
+    Ensure the `resourceRoots` path is correct, especially considering the lowercase format change since version 0.34.0.
 
 ```json
 "sap.app": {
-  "embeds": ["thirdparty/customcontrol/spreadsheetimporter/v1_4_2"]
+  "embeds": ["thirdparty/customcontrol/spreadsheetimporter/v2_0_0"]
 }
 ```
 
@@ -329,11 +376,54 @@ customTasks:
 
 #### Running with CAP
 
-If you are using CAP and installing the component as a dependency **to your UI5 App**, you need to use [`cds-plugin-ui5`](https://www.npmjs.com/package/cds-plugin-ui5?activeTab=versions) to ensure the UI5 Tooling loads the installed component.
+If you are using CAP and installing the component as a dependency **to your UI5 app**, you need to use [`cds-plugin-ui5`](https://www.npmjs.com/package/cds-plugin-ui5?activeTab=versions) to ensure the UI5 Tooling loads the installed component.
 
 ```sh
 npm install cds-plugin-ui5 --save-dev
 ```
+
+#### Handling Large File Uploads in CAP
+
+When uploading large spreadsheet files (e.g., files with thousands of entries), you might encounter the error `request entity too large`. This happens because CAP has a default request size limit.
+
+To resolve this issue, you have two options:
+
+1. **Increase the request size limit in your CAP application**:
+
+   Add the following configuration to your `package.json` file:
+
+   ```json
+   "cds": {
+     "server": {
+       "body_parser": {
+         "limit": "10mb" 
+       }
+     }
+   }
+   ```
+
+   You can adjust the `10mb` value based on your needs.
+
+2. **Reduce the batch size in the Spreadsheet Importer component**:
+
+   Set a smaller `batchSize` parameter when creating the component:
+
+   ```javascript
+   this.spreadsheetUpload = await this.editFlow.getView()
+     .getController()
+     .getAppComponent()
+     .createComponent({
+       usage: "spreadsheetImporter",
+       async: true,
+       componentData: {
+         context: this,
+         tableId: "your-table-id",
+         batchSize: 100 // Reduce batch size to handle large files
+       },
+     });
+   ```
+
+   The default batch size is 1000. Reducing it will create smaller requests that stay within CAP's limits.
 
 #### Configuring `ui5-task-zipper` in Your Deployment YAML File
 
@@ -349,7 +439,7 @@ builder:
       configuration:
         archiveName: uimodule
         includeDependencies:
-        - ui5-cc-spreadsheetimporter-v1-4-2
+        - ui5-cc-spreadsheetimporter-v2-0-0
 ```
 
 The metadata name is defined in the [`ui5.yaml`](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/blob/9b61a778e5b0a5b66c15f5889334a6d684ae88de/packages/ui5-cc-spreadsheetimporter/ui5.yaml#L4) file of the component.
@@ -361,9 +451,9 @@ The metadata name is defined in the [`ui5.yaml`](https://github.com/spreadsheeti
 
 When using decentralized deployment, deployment may fail with the following error:
 
-`"Service name 'spreadsheetimporter_v1_4_2' and public setting 'true' in embedded manifest.json have to be equal to service name 'xxxxxxx' and public setting 'true' of root manifest.json"`
+`"Service name 'spreadsheetimporter_v2_0_0' and public setting 'true' in embedded manifest.json have to be equal to service name 'xxxxxxx' and public setting 'true' of root manifest.json"`
 
-SAP currently does not provide a fix for this. 
+SAP currently does not provide a fix for this.
 
 ##### Workaround 1
 
@@ -386,7 +476,7 @@ builder:
       afterTask: replaceVersion
 ```
 
-This task will update the Spreadsheet Importer manifest with the app's service name at this path: `dist/thirdparty/customcontrol/spreadsheetimporter/v1_4_2/manifest.json`.
+This task will update the Spreadsheet Importer manifest with the app's service name at this path: `dist/thirdparty/customcontrol/spreadsheetimporter/v2_0_0/manifest.json`.
 
 ##### Workaround 2
 

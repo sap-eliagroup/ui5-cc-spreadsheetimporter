@@ -1,5 +1,5 @@
 import { MessageType } from "sap/ui/core/library";
-import { AvailableOptions } from "./enums";
+import { Action, AvailableOptions } from "./enums";
 
 export interface Tags {
 	name: string;
@@ -12,6 +12,7 @@ export interface Property {
 	type: string;
 	label: string;
 	precision?: number;
+	$XYZKey?: boolean;
 }
 export type ListObject = Map<string, Property>;
 export type PropertyArray = { [key: string]: any }[];
@@ -20,6 +21,7 @@ export type Columns = string[];
 export type CustomMessageType = {
 	title: string;
 	group: boolean;
+	update?: boolean;
 };
 
 export interface Messages {
@@ -81,6 +83,7 @@ export type AvailableOptionsType = keyof typeof AvailableOptions;
 
 export interface ComponentData {
 	spreadsheetFileName?: string;
+	action?: Action;
 	context?: object;
 	columns?: string[];
 	excludeColumns?: string[];
@@ -114,6 +117,24 @@ export interface ComponentData {
 	createActiveEntity?: boolean;
 	i18nModel?: object;
 	bindingCustom?: object;
+	showDownloadButton?: boolean;
+	deepDownloadConfig?: DeepDownloadConfig;
+	updateConfig?: UpdateConfig;
+}
+
+export interface DeepDownloadConfig {
+	addKeysToExport: boolean;
+	setDraftStatus: boolean;
+	deepExport: boolean;
+	deepLevel: number;
+	showOptions: boolean;
+	columns: any;
+	filename?: string;
+}
+
+export interface UpdateConfig {
+	fullUpdate: boolean;
+	columns: string[];
 }
 
 export type FireEventReturnType = {
@@ -121,5 +142,30 @@ export type FireEventReturnType = {
 	mParameters: object;
 	returnValue: object;
 };
+
+export type ListObject = Map<string, Property>;
+
+export type PropertyObject = {
+	propertyName: string;
+	propertyValue: any; // Replace 'any' with a more specific type if possible.
+	propertyLabel: [x: string];
+};
+
+interface EntityDefinition {
+	$kind: string;
+	$Key?: string[];
+	[key: string]: PropertyDefinition | NavigationPropertyDefinition | any;
+};
+
+type EntityObject = {
+	$kind: string;
+	$Type?: string;
+	$NavigationPropertyBinding?: Record<string, string>;
+};
+
+interface PropertyWithOrder {
+	name: string;
+	order: number;
+}
 
 // Pro Types

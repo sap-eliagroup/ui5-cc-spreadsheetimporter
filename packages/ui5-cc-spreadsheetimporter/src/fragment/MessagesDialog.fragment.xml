@@ -1,5 +1,5 @@
 <core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core">
-  <Dialog title="{i18n>spreadsheetimporter.messageDialogTitle}" resizable="true" state="{info>/dialogState}" verticalScrolling="false" contentHeight="50%" contentWidth="50%">
+  <Dialog title="{i18n>spreadsheetimporter.messageDialogTitle}" state="{info>/dialogState}" verticalScrolling="false" contentHeight="50%" contentWidth="50%">
     <content>
       <MessageView items="{messages>/}">
         <MessageItem title="{messages>title}" type="{messages>ui5type}" counter="{messages>counter}" subtitle="{messages>subtitle}" description="{messages>description}" />
@@ -12,7 +12,7 @@
         text="{= ${info>/dialogState} === 'Error' ? ${i18n>spreadsheetimporter.messageDialogButtonContinueAnyway} : ${i18n>spreadsheetimporter.messageDialogButtonContinue} }"
         visible="{= !${info>/strict} &amp;&amp; !${info>/strictParameter}}"
       />
-      <Button text="{i18n>spreadsheetimporter.downloadButton}" press="onDownloadErrors" />
+      <Button text="{i18n>spreadsheetimporter.downloadButton}" press=".onDownloadErrors" />
       <Button press=".onCloseMessageDialog" text="{i18n>spreadsheetimporter.messageDialogButtonClose}" />
     </buttons>
   </Dialog>

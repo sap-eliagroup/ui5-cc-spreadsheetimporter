@@ -16,13 +16,13 @@ nav:
   - Typescript: pages/Typescript.md
   - Supported Versions: pages/SupportVersions.md
   - Central Deployment: pages/CentralDeployment.md
-  - yo Generator: pages/Generator.md
   - Button Control: pages/Button.md
+  - Deep Download: pages/spreadsheetdownload.md
+  - Update: pages/Update.md
   - API Reference: 'pages/APIReference.md'
   # - UI5 CLI: pages/CLI.md
   - Pro:
       - Getting Started: pages/Pro/install.md
-      - Spreadsheet Download: pages/Pro/spreadsheetdownload.md
       - Deep Create: pages/Pro/deepcreate.md
   - Development:
       - Getting Started: pages/Development/GettingStarted.md
@@ -31,10 +31,9 @@ nav:
       - Docs: pages/Development/Docs.md
       - GitHub Actions: pages/Development/GitHubActions.md
       - Sample Apps: pages/Development/SampleApps.md
+      - Spreadsheet Download: pages/Development/SpreadsheetDownload.md
   - Changelogs:
       - spreadsheetimporter: pages/CHANGELOGSPREADSHEETIMPORTER.md
-      - spreadsheetimporter Button: pages/CHANGELOGSPREADSHEETIMPORTERBUTTON.md
-      - spreadsheetimporter Generator: pages/CHANGELOGSPREADSHEETIMPORTERGENERATOR.md
   - Troubleshooting: pages/Troubleshooting.md
   - User Documentation: pages/UserDocumentation.md
   - Use Cases: pages/UseCases.md
