@@ -66,5 +66,68 @@ export const CustomMessageTypes: { [key: string]: CustomMessageType } = {
 	MaxLengthExceeded: {
 		title: "MaxLengthExceeded",
 		group: true
+	},
+	ObjectNotFound: {
+		title: "ObjectNotFound",
+		group: true,
+		update: true
+	},
+	DraftEntityMismatch: {
+		title: "DraftEntityMismatch",
+		group: true,
+		update: true
+	},
+	DuplicateKeys: {
+		title: "DuplicateKeys",
+		group: true
+	},
+	MissingKeys: {
+		title: "MissingKeys",
+		group: true,
+		update: true
 	}
 };
+
+export enum MessageType {
+    /**
+     * Message is an error
+     */
+    Error = "Error",
+    /**
+     * Message should be just an information
+     */
+    Information = "Information",
+    /**
+     * Message has no specific level
+     */
+    None = "None",
+    /**
+     * Message is a success message
+     */
+    Success = "Success",
+    /**
+     * Message is a warning
+     */
+	Warning = "Warning"
+}
+
+export enum Action {
+	Create = "CREATE",
+	Update = "UPDATE",
+	Delete = "DELETE"
+}
+
+export const DefaultConfigs = {
+    DeepDownload: {
+        addKeysToExport: false,
+        setDraftStatus: true,
+        deepExport: false,
+        deepLevel: 0,
+        showOptions: true,
+        columns: []
+    },
+    Update: {
+        fullUpdate: false,
+        columns: []
+    }
+} as const;

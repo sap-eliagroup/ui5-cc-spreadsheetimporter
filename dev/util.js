@@ -1,6 +1,14 @@
 const fs = require("fs");
 const path = require('path')
-const yaml = require('js-yaml');
+
+// Handle yaml module dynamically to avoid errors when it's not needed
+let yaml;
+try {
+    yaml = require('js-yaml');
+} catch (error) {
+    // Only initialize yaml when actually needed
+    yaml = null;
+}
 
 async function getReplaceInFile() {
     return await import('replace-in-file');
@@ -298,27 +306,33 @@ function replaceVersionManifest(version) {
 }
 
 function deleteNodeModules(folderPath) {
-	const stack = [folderPath];
-
-	while (stack.length) {
-		const curPath = stack.pop();
-
-		if (fs.existsSync(curPath)) {
-			const files = fs.readdirSync(curPath);
-
-			for (const file of files) {
-				const filePath = path.join(curPath, file);
-
-				if (fs.lstatSync(filePath).isDirectory()) {
-					stack.push(filePath);
-				} else {
-					fs.unlinkSync(filePath);
-				}
-			}
-
-			fs.rmdirSync(curPath);
-		}
-	}
+    // Use a more robust recursive deletion approach
+    try {
+        if (fs.existsSync(folderPath)) {
+            const files = fs.readdirSync(folderPath);
+            
+            for (const file of files) {
+                const curPath = path.join(folderPath, file);
+                
+                if (fs.lstatSync(curPath).isDirectory()) {
+                    // Recursively delete subdirectories
+                    deleteNodeModules(curPath);
+                } else {
+                    // Delete files
+                    fs.unlinkSync(curPath);
+                }
+            }
+            
+            // Now that the directory is empty, we can remove it
+            try {
+                fs.rmdirSync(folderPath);
+            } catch (err) {
+                console.error(`Failed to remove directory ${folderPath}: ${err.message}`);
+            }
+        }
+    } catch (err) {
+        console.error(`Error while deleting ${folderPath}: ${err.message}`);
+    }
 }
 
 function replaceMetadataName(versionDash){
@@ -343,7 +357,59 @@ function updateManifestVersion(version){
 
 }
 
+function replaceReleasePleaseManifest(version){
+	// remove 'v' from version
+	version = version.replace('v', '');
+	// Define the file path for the .release-please-manifest.json file
+	const filePath = './.release-please-manifest.json';
 
+	// Read the JSON file
+	const jsonFile = fs.readFileSync(filePath, 'utf8');
+	const jsonData = JSON.parse(jsonFile);
+	
+	// Replace the version for the package "packages/ui5-cc-spreadsheetimporter"
+	const packageName = "packages/ui5-cc-spreadsheetimporter";
+	jsonData[packageName] = version;
+
+	// Write the updated JSON back to the .release-please-manifest.json file
+	fs.writeFileSync(filePath, JSON.stringify(jsonData, null, 2), "utf8");
+}
+
+if (process.argv.length > 2) {
+  const command = process.argv[2];
+  
+  if (command === 'deleteNodeModules' && process.argv.length > 3) {
+    const folderPath = process.argv[3];
+    console.log(`Deleting node_modules folders in ${folderPath}...`);
+    
+    function findAndDeleteNodeModules(dir) {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          
+          if (entry.isDirectory()) {
+            if (entry.name === 'node_modules') {
+              console.log(`Deleting: ${fullPath}`);
+              deleteNodeModules(fullPath);
+            } else {
+              // Skip .git and similar directories to avoid unnecessary traversal
+              if (!entry.name.startsWith('.')) {
+                findAndDeleteNodeModules(fullPath);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`Error processing directory ${dir}: ${err.message}`);
+      }
+    }
+    
+    findAndDeleteNodeModules(folderPath);
+    console.log('Deletion completed!');
+  }
+}
 
 module.exports.getPackageJson = getPackageJson;
 module.exports.getVersionDots = getVersionDots;
@@ -363,3 +429,4 @@ module.exports.replaceVersionManifest = replaceVersionManifest;
 module.exports.deleteNodeModules = deleteNodeModules;
 module.exports.replaceMetadataName = replaceMetadataName;
 module.exports.updateManifestVersion = updateManifestVersion;
+module.exports.replaceReleasePleaseManifest = replaceReleasePleaseManifest;

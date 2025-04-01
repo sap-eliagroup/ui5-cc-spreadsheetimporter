@@ -2,59 +2,64 @@
 
 How to use them see [Example Code](#example-code)
 
-## Configuration Options
+## Configuration Overview
 
 The table below summarizes the options available for the UI5 Spreadsheet Importer Component. Detailed explanations and examples for each option are provided in the linked sections.
 
 ### File Handling Options
 
-| Option                  | Description                                                             | Default        | Details               |
-|-------------------------|-------------------------------------------------------------------------|----------------|-----------------------|
-| [`columns`](#columns) | Defines columns imported and shown in the template.                                  | `[]`| string[]                |
-| [`excludeColumns`](#excludecolumns) | Defines columns excluding in import and template.                                  | `[]`| string[]                |
-| [`spreadsheetFileName`](#spreadsheetfilename) | Defines the file name for downloads.                                  | `Template.xlsx`| string                |
-| [`spreadsheetTemplateFile`](#spreadsheettemplatefile) | Use a custom template file instead of a generated one.                | `""`           | object                |
-| [`readAllSheets`](#readallsheets) | Access all sheets in standalone mode.                                    | `false`        | boolean               |
-| [`readSheet`](#readsheet) | Option to read a specific sheet or show a sheet selector.               | `0`            | number or string      |
+| Option                                        | Description                                                  | Default            | Type                      |
+|-----------------------------------------------|--------------------------------------------------------------|--------------------|---------------------------|
+| [`columns`](#columns)                         | Defines columns to import and display in the template.       | All fields         | `string[]`                |
+| [`excludeColumns`](#excludecolumns)           | Specifies columns to exclude from import and template.       | `[]`               | `string[]`                |
+| [`spreadsheetFileName`](#spreadsheetfilename) | Sets the file name when downloading the template.            | `"Template.xlsx"`  | `string`                  |
+| [`spreadsheetTemplateFile`](#spreadsheettemplatefile)| Uses a custom template file instead of generating one.      | `""`               | `string` or `ArrayBuffer` |
+| [`readAllSheets`](#readallsheets)             | Reads all sheets in standalone mode.                         | `false`            | `boolean`                 |
+| [`readSheet`](#readsheet)                     | Reads a specific sheet or shows a sheet selector.            | `0`                | `number` or `string`      |
 
 ### UI Customization Options
 
-| Option                  | Description                                                             | Default        | Details               |
-|-------------------------|-------------------------------------------------------------------------|----------------|-----------------------|
-| [`hidePreview`](#hidepreview) | Hide the button to preview uploaded data in the dialog.                  | `false`        | boolean               |
-| [`previewColumns`](#previewcolumns) | Define which columns to show in the preview dialog.                      | `[]`           | string[]              |
-| [`showBackendErrorMessages`](#showbackenderrormessages) | Show backend error messages directly in the UI.                            | `false`        | boolean               |
-| [`showOptions`](#showoptions) | Show a menu to change configurations at runtime.                          | `false`        | boolean               |
+| Option                                              | Description                                           | Default | Type       |
+|-----------------------------------------------------|-------------------------------------------------------|---------|------------|
+| [`hidePreview`](#hidepreview)                       | Hides the button to preview uploaded data.            | `false` | `boolean`  |
+| [`previewColumns`](#previewcolumns)                 | Specifies columns to display in the preview dialog.   | `[]`    | `string[]` |
+| [`showBackendErrorMessages`](#showbackenderrormessages)| Displays backend error messages in the UI.          | `false` | `boolean`  |
+| [`showOptions`](#showoptions)                       | Shows a menu to change configurations at runtime.     | `false` | `boolean`  |
+| [`showDownloadButton`](#showdownloadbutton)         | Shows the button to download the uploaded data.       | `false` | `boolean`  |
 
 ### Data Processing Options
 
-| Option                  | Description                                                             | Default        | Details               |
-|-------------------------|-------------------------------------------------------------------------|----------------|-----------------------|
-| [`batchSize`](#batchsize) | Controls batch sizes sent to the backend server.                       | `1000`         | integer               |
-| [`strict`](#strict) | Controls availability of the `Continue` button in error dialogs.        | `false`        | boolean               |
-| [`decimalSeparator`](#decimalseparator) | Determines the decimal separator for numbers.                            | Browser default| string                |
-| [`mandatoryFields`](#mandatoryfields) | Fields to check for presence in the spreadsheet.                         | Not defined    | string[]              |
-| [`skipMandatoryFieldCheck`](#skipmandatoryfieldcheck) | Skip the check for mandatory fields.                                    | `false`        | boolean               |
-| [`skipColumnsCheck`](#skipcolumnscheck) | Skip check for unknown columns not in metadata.                           | `false`        | boolean               |
-| [`continueOnError`](#continueonerror) | Continue processing next batches even after errors.                      | `false`        | boolean               |
+| Option                                              | Description                                           | Default         | Type       |
+|-----------------------------------------------------|-------------------------------------------------------|-----------------|------------|
+| [`action`](#action)               | Continues processing next batches even after errors.  | `CREATE`         | `string`  |
+| [`batchSize`](#batchsize)                           | Controls the size of batches sent to the backend.     | `1000`          | `number`   |
+| [`strict`](#strict)                                 | Controls availability of the "Continue" button in error dialogs. | `false` | `boolean`  |
+| [`decimalSeparator`](#decimalseparator)             | Sets the decimal separator for numbers.               | Browser default | `string`   |
+| [`mandatoryFields`](#mandatoryfields)               | Specifies mandatory fields to check in the spreadsheet.| Not defined     | `string[]` |
+| [`skipMandatoryFieldCheck`](#skipmandatoryfieldcheck)| Skips the check for mandatory fields.                | `false`         | `boolean`  |
+| [`skipColumnsCheck`](#skipcolumnscheck)             | Skips the check for unknown columns not in metadata.  | `false`         | `boolean`  |
+| [`continueOnError`](#continueonerror)               | Continues processing next batches even after errors.  | `false`         | `boolean`  |
+
 
 ### Advanced Configuration Options
 
-| Option                  | Description                                                             | Default        | Details               |
-|-------------------------|-------------------------------------------------------------------------|----------------|-----------------------|
-| [`fieldMatchType`](#fieldmatchtype) | Strategy for matching spreadsheet columns to fields.                   | `label`        | string                |
-| [`activateDraft`](#activatedraft) | Activate a draft immediately if possible.                               | `false`        | boolean               |
-| [`createActiveEntity`](#createactiveentity) | Directly create an active entity in draft scenarios.                    | `false`        | boolean               |
-| [`standalone`](#standalone) | Use the component in standalone mode without a linked table.             | `false`        | boolean               |
-| [`useTableSelector`](#usetableselector) | Choose a table to upload data to if multiple tables are present.         | `false`        | boolean               |
-| [`hideSampleData`](#hidesampledata) | Do not add sample data to the template file.                             | `false`        | boolean               |
-| [`sampleData`](#sampledata) | Add custom sample data to the template file.                             | Generated data | object                |
-| [`debug`](#debug) | Enable debug mode to show more console statements and logs.              | `false`        | boolean               |
-| [`componentContainerData`](#componentcontainerdata) | Special options for using the component in a ComponentContainer.          | Not specified  | boolean               |
-| [`bindingCustom`](#bindingcustom) |    Use a OData binding instead of a table binding.   | Not specified  | object                |
-| [`i18nModel`](#i18nmodel) | Use a custom internation alization model to overwrite default texts.      | Not specified  | object                |
+| Option                                            | Description                                               | Default            | Type       |
+|---------------------------------------------------|-----------------------------------------------------------|--------------------|------------|
+| [`fieldMatchType`](#fieldmatchtype)               | Strategy for matching spreadsheet columns to fields.      | `"labelTypeBrackets"` | `string` |
+| [`activateDraft`](#activatedraft)                 | Activates a draft immediately if possible.                | `false`            | `boolean`  |
+| [`createActiveEntity`](#createactiveentity)       | Directly creates an active entity in draft scenarios.     | `false`            | `boolean`  |
+| [`standalone`](#standalone)                       | Uses the component in standalone mode without a table.    | `false`            | `boolean`  |
+| [`useTableSelector`](#usetableselector)           | Allows choosing a table when multiple tables are present. | `false`            | `boolean`  |
+| [`hideSampleData`](#hidesampledata)               | Omits sample data in the template file.                   | `false`            | `boolean`  |
+| [`sampleData`](#sampledata)                       | Adds custom sample data to the template file.             | Auto-generated     | `object[]` |
+| [`debug`](#debug)                                 | Enables debug mode with additional console logs.          | `false`            | `boolean`  |
+| [`componentContainerData`](#componentcontainerdata)| Special options for using the component in a `ComponentContainer`.| Not specified     | `object`   |
+| [`bindingCustom`](#bindingcustom)                 | Uses a custom OData binding instead of a table binding.   | Not specified      | `object`   |
+| [`i18nModel`](#i18nmodel)                         | Uses a custom i18n model to override default texts.       | Not specified      | `object`   |
 
-This structured layout now includes the default settings, providing complete and immediate visibility into the expected behavior of each option unless otherwise configured.
+---
+
+## Configuration Options
 
 ### `columns`
 
@@ -175,6 +180,15 @@ Of course, creating the draft entity and the subsequent activation takes longer 
 Together with the option `continueOnError`, it is also possible to create all entities and try to activate the other entities if the draft activation fails.
 This means that at least all drafts are available.
 
+### `action`
+
+**default:** `CREATE`
+
+Options:  
+
+- `CREATE` : Create
+- `UPDATE` : Update
+
 ### `batchSize`
 
 **default:** `1.000`
@@ -190,6 +204,8 @@ When the number of lines in the Spreadsheet file exceeds the specified `batchSiz
 The default value is 1,000, which means that when the number of lines in the Spreadsheet file exceeds 1,000, the payload array will be divided into equal parts, and each part will be sent as a separate batch request.
 
 If you set the `batchSize` to 0, the payload array will not be divided, and the entire array will be sent as a single batch request.
+
+For updates, the batch size is limited to 100.
 
 ### `standalone`
 
@@ -360,7 +376,12 @@ There are also only a few selected configurations available.
 
 ### `availableOptions`
 
-**default:** `[]`
+### `showDownloadButton`
+
+**default:** `false`
+
+This option defines whether the button to download data should be displayed or not.  
+More information can be found in the [Spreadsheet Deep Download](spreadsheetdownload.md) documentation.
 
 #### Available Options
 
@@ -485,6 +506,9 @@ For the event, the method from your view controller is attached to the event.
 | Option | Description | Details |
 | ------ | --- | --- |
 | `buttonText` | Text to be displayed on the button | string |
+| `buttonId` | Id of the button | string |
+| `buttonIcon` | Icon of the button like `sap-icon://download` | string |
+| `downloadButton` | Defines whether the download event should be triggered instead of the upload event | boolean |
 | `uploadButtonPress` | Event after the upload button is pressed | string |
 | `changeBeforeCreate` | Event before data sent to the backend | string |
 | `checkBeforeRead` | Event before data is uploaded to the app | string |
@@ -499,9 +523,22 @@ usage="spreadsheetImporter" propagateModel="true" async="true"
 settings="{
   standalone:true,
   columns: ['product_ID', 'username'],
+  deepDownloadConfig:{
+    deepLevel: 2,
+    deepExport: true,
+    addKeysToExport: true,
+    showOptions: true,
+    filename: 'Orders12',
+    columns : {
+        'OrderNo':{
+            'order': 1
+        }
+    }
+  },
   componentContainerData:{
     uploadButtonPress:'uploadButtonPress',
-    buttonText:'Excel Upload'
+    buttonText:'Excel Upload',
+    downloadButton:true
     }
   }" />
 ````

@@ -1,4 +1,102 @@
-# Changelog
+
+
+## [2.0.0](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.7.3...ui5-cc-spreadsheetimporter-v2.0.0) (2025-03-28)
+
+This release only changes the license to the SpreadsheetImporter Commercial License.  
+No other changes to the component are made. 
+
+
+### ⚠ BREAKING CHANGES
+
+* Switch to commercial license for version 2.0.0+
+
+### Miscellaneous Chores
+
+* Switch to commercial license for version 2.0.0+ ([88fe938](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/88fe93858072683cba0be4662dac7a8b999e4de1))
+
+## [1.7.3](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.7.2...ui5-cc-spreadsheetimporter-v1.7.3) (2025-02-11)
+
+
+### Bug Fixes
+
+* check for errors when fetching objects for update ([#714](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/714)) ([1bac0be](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/1bac0be507031982bca4127dbd772c1238e933c3))
+* support of columns as string array in deep export ([#712](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/712)) ([e15a9a9](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/e15a9a959a49a270abfcde0fb0271d8f692933a0))
+
+## [1.7.2](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.7.1...ui5-cc-spreadsheetimporter-v1.7.2) (2025-02-10)
+
+
+### Bug Fixes
+
+* **update:** dont check draft state if not available ([#709](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/709)) ([e0f6f24](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/e0f6f2494c880c10af7e68972de318eb09b92a41))
+
+## [1.7.1](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.7.0...ui5-cc-spreadsheetimporter-v1.7.1) (2025-02-09)
+
+
+### Bug Fixes
+
+* hotfix for wrong namespace ([#706](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/706)) ([a2861ae](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/a2861aec515853329eed8fc438c4590ea9da6ad4))
+
+## [1.7.0](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.6.0...ui5-cc-spreadsheetimporter-v1.7.0) (2025-02-07)
+
+
+### Features
+
+- update records (V4 only) ([#673](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/673)) ([6fe3c90](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/6fe3c9011226edc1f2e3208f7d88354be7d43867))
+-  new config option `action` to specify the action to be performed (`CREATE`, `UPDATE`)  ([#673](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/673)) ([6fe3c90](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/6fe3c9011226edc1f2e3208f7d88354be7d43867))
+-  Parser checking for `Edm.Guid`  ([#673](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/673)) ([6fe3c90](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/6fe3c9011226edc1f2e3208f7d88354be7d43867))
+
+
+### Bug Fixes
+
+* download fails with empty `$expand` parameter ([#703](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/703)) ([0a930c2](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/0a930c2c13429a9e734201a6166ce348591c2721))
+
+## [1.6.0](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.5.2...ui5-cc-spreadsheetimporter-v1.6.0) (2024-12-17)
+
+
+### Features
+
+* have new property `IsActiveEntity` status in export ([#691](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/691)) ([fdefc5a](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/fdefc5ace261f108eacd4e853294b6cfd99b6905))
+
+
+### Bug Fixes
+
+* show download template button in standalone mode when spreadsheetTemplateFile is used ([51129c3](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/51129c3f25b1083533e1155fac310113414f0528))
+
+## [1.5.2](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.5.1...ui5-cc-spreadsheetimporter-v1.5.2) (2024-12-12)
+
+
+### Bug Fixes
+
+* the `resize` icon of dialog caused chrome to crash ([#686](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/686)) ([9729a98](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/9729a98465161f90a12866f54a656ad8099ee111))
+
+## [1.5.1](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.5.0...ui5-cc-spreadsheetimporter-v1.5.1) (2024-12-12)
+
+
+### Bug Fixes
+
+* column names did not parse if cell type is date ([#677](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/677)) ([100771e](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/100771e96bb2ca15e939128b4fd937eda7a6ebbc))
+* resolve infinite loop in entity relationships navigation properties ([#683](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/683)) ([1b29c8a](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/1b29c8a85eb52f0c16ca15bce3c5e0cf13321b89))
+
+## [1.5.0](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.4.2...ui5-cc-spreadsheetimporter-v1.5.0) (2024-12-06)
+
+
+### Features
+
+* add icon option to xml view button ([#664](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/664)) ([5fa1c5c](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/5fa1c5c6184416ff7b3d6313a68c0e74f2a82f93))
+* Deep Spreadsheet Export ([#657](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/657)) ([7258af7](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/7258af781362820c48004b053ce90193a21859ec))
+
+
+### Bug Fixes
+
+* in V4 Freestyle MetaModel was not found ([#663](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/663)) ([7dee888](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/7dee8886bf57ca81ff0bc25dec411565fa93a1c6))
+* label not found if no annotations available ([#670](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/670)) ([3801d1a](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/3801d1a17c708e09dec0451bec5c4d2c4787da10))
+
+## [1.4.3](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.4.2...ui5-cc-spreadsheetimporter-v1.4.3) (2024-11-12)
+
+
+### Bug Fixes
+
+* label could be undefined and throws error([#649](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/issues/649)) ([4b9fa59](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/commit/4b9fa591fd039178921948b360e4c746e1d982ff))
 
 ## [1.4.2](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter/compare/ui5-cc-spreadsheetimporter-v1.4.1...ui5-cc-spreadsheetimporter-v1.4.2) (2024-10-18)
 

@@ -1,10 +1,10 @@
 import ManagedObject from "sap/ui/base/ManagedObject";
 import Log from "sap/base/Log";
-import ResourceBundle from "sap/base/i18n/ResourceBundle";
+import type ResourceBundle from "sap/base/i18n/ResourceBundle";
 import MessageBox from "sap/m/MessageBox";
-import { FireEventReturnType, RowData, ValueData } from "../types";
-import Component from "../Component";
-import { FieldMatchType } from "../enums";
+import type { DeepDownloadConfig, FireEventReturnType, RowData, UpdateConfig, ValueData } from "../types";
+import type Component from "../Component";
+import type { FieldMatchType } from "../enums";
 import ObjectPool from "sap/ui/base/ObjectPool";
 import Event from "sap/ui/base/Event";
 import ts from "sap/ui/model/odata/v4/ts";
@@ -181,16 +181,33 @@ export default class Util extends ManagedObject {
 		URL.revokeObjectURL(url);
 	}
 
-	static async loadUI5RessourceAsync(libraryName: string): Promise<any> {
+	static async getLanguage(): Promise<string> {
+		try {
+			// getCore is not available in UI5 version 2.0 and above, prefer this over sap.ui.getCore().getConfiguration().getLanguage()
+			const Localization = await Util.loadUI5RessourceAsync("sap/base/i18n/Localization");
+			return Localization.getLanguage();
+		} catch (error) {
+			Log.debug("sap/base/i18n/Localization not found", undefined, "SpreadsheetUpload: checkForODataErrors");
+		}
+		// ui5lint-disable-next-line -- fallback for UI5 versions below 2.0
+		return sap.ui.getCore().getConfiguration().getLanguage();
+	}
+
+	static async loadUI5RessourceAsync(moduleName: string): Promise<any> {
+		const alreadyLoadedModule = sap.ui.require(moduleName);
+		if (alreadyLoadedModule) {
+			return Promise.resolve(alreadyLoadedModule);
+		}
+
 		return new Promise(function (resolve, reject) {
 			sap.ui.require(
-				[libraryName],
-				function (Library: unknown) {
-					resolve(Library);
+				[moduleName],
+				function (Module: unknown) {
+					resolve(Module);
 				},
 				function (err: any) {
 					reject(err);
-				}
+				},
 			);
 		});
 	}
@@ -239,5 +256,134 @@ export default class Util extends ManagedObject {
 			mParameters: (event as any)?.mParameters,
 			returnValue: promises[0]
 		};
+	}
+
+	static mergeDeepDownloadConfig(defaultConfig: DeepDownloadConfig, providedConfig?: DeepDownloadConfig): DeepDownloadConfig {
+		if (!providedConfig) return defaultConfig;
+
+		// Deep merge for spreadsheetExportConfig
+		const mergedDeepDownloadConfig: DeepDownloadConfig = {
+			...defaultConfig,
+			...providedConfig
+		};
+
+		return mergedDeepDownloadConfig;
+	}
+
+	static mergeUpdateConfig(defaultConfig: UpdateConfig, providedConfig?: UpdateConfig): UpdateConfig {
+		if (!providedConfig) return defaultConfig;
+
+		const mergedUpdateConfig: UpdateConfig = {
+			...defaultConfig,
+			...providedConfig
+		};
+
+		return mergedUpdateConfig;
+	}
+
+	/**
+	 * Validates the component configuration for potential issues or incompatibilities.
+	 * Logs configuration issues to the console.
+	 * 
+	 * @param componentData The configuration data provided by the developer
+	 * @returns True if the configuration is valid, false if critical issues were found
+	 */
+	static validateConfiguration(componentData: any): boolean {
+		if (!componentData) {
+			return true; // No config to validate
+		}
+
+		const errors: string[] = [];
+		const warnings: string[] = [];
+
+		// Check for unknown configuration options
+		const knownProperties = [
+			"spreadsheetFileName", "action", "context", "columns", "excludeColumns", 
+			"tableId", "odataType", "mandatoryFields", "fieldMatchType", "activateDraft", 
+			"batchSize", "standalone", "strict", "decimalSeparator", "hidePreview", 
+			"previewColumns", "skipMandatoryFieldCheck", "skipColumnsCheck", "skipMaxLengthCheck", 
+			"showBackendErrorMessages", "showOptions", "availableOptions", "hideSampleData", 
+			"sampleData", "spreadsheetTemplateFile", "useTableSelector", "readAllSheets", 
+			"readSheet", "spreadsheetRowPropertyName", "continueOnError", "createActiveEntity", 
+			"i18nModel", "debug", "componentContainerData", "bindingCustom", "showDownloadButton", 
+			"deepDownloadConfig", "updateConfig"
+		];
+
+		// Find unknown properties in componentData
+		const unknownProperties = Object.keys(componentData).filter(prop => !knownProperties.includes(prop));
+		if (unknownProperties.length > 0) {
+			warnings.push(`Unknown configuration options found: ${unknownProperties.join(", ")}. These will be ignored.`);
+		}
+
+		// Check for standalone mode configuration issues
+		if (componentData.standalone === true) {
+			if (!componentData.columns || !Array.isArray(componentData.columns) || componentData.columns.length === 0) {
+				errors.push("When 'standalone' is true, 'columns' must be specified.");
+			}
+		}
+
+		// Check for incompatible config combinations
+		if (componentData.activateDraft === true && componentData.createActiveEntity === true) {
+			errors.push("'activateDraft' and 'createActiveEntity' cannot both be true - they are mutually exclusive.");
+		}
+
+		// Check for read sheet configuration
+		if (componentData.readAllSheets === true && componentData.readSheet !== 0) {
+			warnings.push("'readAllSheets' is true, but 'readSheet' is also specified. 'readSheet' will be ignored.");
+		}
+
+		// Validate column configuration
+		if (componentData.columns && componentData.excludeColumns) {
+			const columnsSet = new Set(componentData.columns);
+			const excludedInColumns = componentData.excludeColumns.filter((col: string) => columnsSet.has(col));
+			
+			if (excludedInColumns.length > 0) {
+				warnings.push(`Columns found in both 'columns' and 'excludeColumns': ${excludedInColumns.join(", ")}. These will be excluded.`);
+			}
+		}
+
+		// Check batch size for updates
+		if (componentData.action === "UPDATE" && componentData.batchSize > 100) {
+			warnings.push("For UPDATE operations, batch size is limited to 100. Your configured value will be capped.");
+		}
+
+		// Validate spreadsheetTemplateFile with related config options
+		if (componentData.spreadsheetTemplateFile && !componentData.skipColumnsCheck) {
+			warnings.push("When using 'spreadsheetTemplateFile', it's recommended to set 'skipColumnsCheck' to true to avoid errors with custom columns.");
+		}
+
+		// Validate field match type
+		if (componentData.fieldMatchType && 
+			componentData.fieldMatchType !== "label" && 
+			componentData.fieldMatchType !== "labelTypeBrackets") {
+			errors.push(`Invalid 'fieldMatchType' value: '${componentData.fieldMatchType}'. Valid options are 'label' or 'labelTypeBrackets'.`);
+		}
+
+		// Validate decimal separator
+		if (componentData.decimalSeparator && 
+			componentData.decimalSeparator !== "." && 
+			componentData.decimalSeparator !== ",") {
+			errors.push(`Invalid 'decimalSeparator' value: '${componentData.decimalSeparator}'. Valid options are '.' or ','.`);
+		}
+
+		// Handle configuration issues
+		if (errors.length > 0) {
+			const errorMessage = "Spreadsheet Importer Configuration Errors:\n" + errors.join("\n");
+			
+			if (warnings.length > 0) {
+				const warningText = "\nWarnings:\n" + warnings.join("\n");
+				Log.error(errorMessage + warningText, undefined, "SpreadsheetUpload: Configuration");
+			} else {
+				Log.error(errorMessage, undefined, "SpreadsheetUpload: Configuration");
+			}
+			
+			return false;
+		} else if (warnings.length > 0) {
+			const warningMessage = "Spreadsheet Importer Configuration Warnings:\n" + warnings.join("\n");
+			Log.warning(warningMessage, undefined, "SpreadsheetUpload: Configuration");
+			return true;
+		}
+
+		return true;
 	}
 }
